@@ -1,7 +1,15 @@
 import { useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
-import { Badge, List, ListItem, ListItemButton, ListItemText, useTheme } from '@mui/material';
+import {
+  Badge,
+  Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  useTheme,
+} from '@mui/material';
 
 import { useMobile } from '@/hooks';
 import { DynamicallyVariableedContext } from '@/shared/dynamicallyVariable';
@@ -46,7 +54,12 @@ export default function B3Nav({ closeSidebar }: B3NavProps) {
     });
   };
 
-  const handleClick = (item: { configKey?: string; path: string }) => {
+  const handleClick = (item: { configKey?: string; path: string; isExternal?: boolean }) => {
+    if (item.isExternal) {
+      window.location.href = window.location.origin + item.path;
+      return;
+    }
+
     if (role === 100) {
       dispatch({
         type: 'common',
@@ -160,6 +173,47 @@ export default function B3Nav({ closeSidebar }: B3NavProps) {
           </ListItem>
         );
       })}
+
+      <Divider />
+
+      <ListItem key="marketing-pricing" disablePadding>
+        <ListItemButton
+          onClick={() =>
+            handleClick({
+              path: '/pro-portal/marketing-pricing/',
+              isExternal: true,
+            })
+          }
+        >
+          <ListItemText primary="Marketing & Pricing" />
+        </ListItemButton>
+      </ListItem>
+
+      <ListItem key="technical-training" disablePadding>
+        <ListItemButton
+          onClick={() =>
+            handleClick({
+              path: '/pro-portal/technical-training/',
+              isExternal: true,
+            })
+          }
+        >
+          <ListItemText primary="Technical Training" />
+        </ListItemButton>
+      </ListItem>
+
+      <ListItem key="hires-images" disablePadding>
+        <ListItemButton
+          onClick={() =>
+            handleClick({
+              path: '/pro-portal/hires-images/',
+              isExternal: true,
+            })
+          }
+        >
+          <ListItemText primary="Hi-Res Images" />
+        </ListItemButton>
+      </ListItem>
     </List>
   );
 }

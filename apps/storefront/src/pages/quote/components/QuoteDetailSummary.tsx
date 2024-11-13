@@ -1,6 +1,18 @@
+import { useEffect, useState } from 'react';
 import { useB3Lang } from '@b3/lang';
-import { Box, Card, CardContent, Grid, Typography } from '@mui/material';
+import {
+  Box,
+  Card,
+  CardContent,
+  FormControlLabel,
+  Grid,
+  Radio,
+  RadioGroup,
+  Typography,
+} from '@mui/material';
 
+import { createCartHeadless } from '@/shared/service/bc/api/cart';
+import { createNewCart, deleteCart, getCart } from '@/shared/service/bc/graphql/cart';
 import { useAppSelector } from '@/store';
 import { currencyFormatConvert } from '@/utils';
 
@@ -20,8 +32,37 @@ interface QuoteDetailSummaryProps {
   isHideQuoteCheckout: boolean;
 }
 
+interface CartItem {
+  itemId: number;
+  productId: number;
+  quantity: number;
+  variantId: number;
+  productEntityId: number;
+  variantEntityId: number;
+}
+
+interface ShippingOption {
+  id: string;
+  description: string;
+  cost: number;
+  isRecommended: boolean;
+}
+
+interface ShippingAddress {
+  firstName: string;
+  lastName: string;
+  email: string;
+  company: string;
+  address1: string;
+  address2: string;
+  city: string;
+  stateOrProvinceCode: string;
+  countryCode: string;
+  postalCode: string;
+}
+
 export default function QuoteDetailSummary({
-  quoteSummary: { originalSubtotal, discount, tax, shipping, totalAmount },
+  quoteSummary: { originalSubtotal, discount, tax, /* shipping, */ totalAmount },
   quoteDetailTax = 0,
   status,
   quoteDetail,
@@ -40,58 +81,147 @@ export default function QuoteDetailSummary({
     return showInclusiveTaxPrice ? price + quoteDetailTax : price;
   };
 
-  const priceFormat = (price: number) =>
-    `${currencyFormatConvert(price, {
+  const priceFormat = (price: number | string) => {
+    if (typeof price === 'string' && !parseFloat(price)) return price;
+
+    return `${currencyFormatConvert(price, {
       currency: quoteDetail.currency,
       isConversionRate: false,
       useCurrentCurrency: !!quoteDetail.currency,
     })}`;
-
-  const getShippingAndTax = () => {
-    if (quoteDetail?.shippingMethod?.id) {
-      return {
-        shippingText: `${b3Lang('quoteDetail.summary.shipping')}(${
-          quoteDetail?.shippingMethod?.description || ''
-        })`,
-        shippingVal: priceFormat(+shipping),
-        taxText: b3Lang('quoteDetail.summary.tax'),
-        taxVal: priceFormat(+tax),
-      };
-    }
-
-    if (!quoteDetail?.salesRepEmail && !quoteDetail?.shippingMethod?.id && +status === 1) {
-      return {
-        shippingText: b3Lang('quoteDetail.summary.shipping'),
-        shippingVal: b3Lang('quoteDetail.summary.tbd'),
-        taxText: b3Lang('quoteDetail.summary.estimatedTax'),
-        taxVal: priceFormat(+tax),
-      };
-    }
-
-    if (
-      quoteDetail?.salesRepEmail &&
-      !quoteDetail?.shippingMethod?.id &&
-      (+status === 1 || +status === 5)
-    ) {
-      return {
-        shippingText: `${b3Lang('quoteDetail.summary.shipping')}(${b3Lang(
-          'quoteDetail.summary.quoteCheckout',
-        )})`,
-        shippingVal: b3Lang('quoteDetail.summary.tbd'),
-        taxText: b3Lang('quoteDetail.summary.tax'),
-        taxVal: b3Lang('quoteDetail.summary.tbd'),
-      };
-    }
-
-    return null;
   };
 
-  const shippingAndTax = getShippingAndTax();
+  /* retrieving shipping & handling via BC API */
 
-  const showPrice = (price: string | number): string | number => {
+  const [shippingOptions, setShippingOptions] = useState<
+    | {
+        id: string;
+        description: string;
+        cost: number;
+        isRecommended: boolean;
+      }[]
+    | null
+  >(null);
+
+  const [selectedShippingOption, setSelectedShippingOption] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getShippingAndTax = async () => {
+      const lineItems = quoteDetail?.productsList?.map((item: CartItem) => ({
+        itemId: item.productId,
+        productId: item.productId,
+        quantity: item.quantity,
+        variantId: item.variantId,
+      }));
+
+      if (lineItems?.length) {
+        const cartInfo = await getCart();
+        const originalCartData = cartInfo?.data?.site?.cart;
+        const existingCartId = cartInfo?.data?.site?.cart?.entityId;
+
+        if (existingCartId) {
+          await deleteCart({
+            deleteCartInput: {
+              cartEntityId: existingCartId,
+            },
+          });
+        }
+
+        await deleteCart({
+          deleteCartInput: {
+            cartEntityId: '62b123f0-5f76-4761-bdc1-4d5eb0e4c3d9',
+          },
+        });
+
+        const tempCart: {
+          id?: string;
+          detail?: string;
+        } = await createCartHeadless({
+          lineItems,
+          shippingAddress: quoteDetail.shippingAddress,
+        });
+
+        const includes = 'consignments.availableShippingOptions';
+        const billingAddress: ShippingAddress = {
+          firstName: quoteDetail.billingAddress.firstName,
+          lastName: quoteDetail.billingAddress.lastName,
+          email: quoteDetail.billingAddress.email,
+          company: quoteDetail.companyId.companyName,
+          address1: quoteDetail.billingAddress.address,
+          address2: '',
+          city: quoteDetail.billingAddress.city,
+          stateOrProvinceCode: quoteDetail.billingAddress.stateCode,
+          countryCode: quoteDetail.billingAddress.countryCode,
+          postalCode: quoteDetail.billingAddress.zipCode,
+        };
+
+        const consignmentResponse = await fetch(
+          `/api/storefront/checkout/${tempCart.id}/consignments?include=${includes}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([
+              {
+                shippingAddress: billingAddress,
+                lineItems,
+              },
+            ]),
+          },
+        );
+
+        const consignmentData = await consignmentResponse.json();
+
+        const shippingOptions = consignmentData.consignments[0].availableShippingOptions.map(
+          (option: ShippingOption) => {
+            if (option.isRecommended) setSelectedShippingOption(option.id);
+            return {
+              id: option.id,
+              description: option.description,
+              cost: option.cost,
+              isRecommended: option.isRecommended,
+            };
+          },
+        );
+
+        setShippingOptions(shippingOptions);
+
+        if (tempCart.id) {
+          await deleteCart({
+            deleteCartInput: {
+              cartEntityId: tempCart.id,
+            },
+          });
+        }
+
+        if (originalCartData) {
+          const physicalItems = originalCartData.lineItems.physicalItems || [];
+          const formattedLineItems = physicalItems.map((item: CartItem) => ({
+            quantity: item.quantity,
+            productEntityId: item.productEntityId,
+            variantEntityId: item.variantEntityId,
+            selectedOptions: {
+              multipleChoices: [],
+              textFields: [],
+            },
+          }));
+
+          await createNewCart({
+            createCartInput: {
+              lineItems: formattedLineItems,
+            },
+          });
+
+          await getCart();
+        }
+      }
+    };
+
+    getShippingAndTax();
+  }, [quoteDetail]);
+
+  const showPrice = (price: string | number | null): string | number => {
     if (isHideQuoteCheckout) return b3Lang('quoteDraft.quoteSummary.tbd');
-
-    return price;
+    return price ?? '';
   };
 
   const subtotalPrice = +originalSubtotal;
@@ -163,37 +293,70 @@ export default function QuoteDetailSummary({
               </Typography>
             </Grid>
 
-            {shippingAndTax && (
-              <>
-                <Grid
-                  container
-                  justifyContent="space-between"
-                  sx={{
-                    margin: '4px 0',
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      maxWidth: '70%',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {shippingAndTax.shippingText}
-                  </Typography>
-                  <Typography>{showPrice(shippingAndTax.shippingVal)}</Typography>
+            <Grid
+              container
+              justifyContent="space-between"
+              sx={{
+                margin: '4px 0',
+              }}
+            >
+              <Typography>{b3Lang('quoteDetail.summary.tax')}</Typography>
+              <Typography>{showPrice(priceFormat(+tax))}</Typography>
+            </Grid>
+            <Grid
+              container
+              justifyContent="space-between"
+              sx={{
+                margin: '4px 0',
+              }}
+            >
+              <Typography
+                sx={{
+                  maxWidth: '70%',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {b3Lang('quoteDetail.summary.shipping')}
+              </Typography>
+              <Typography>
+                {showPrice(
+                  priceFormat(
+                    shippingOptions?.find((opt) => opt.id === selectedShippingOption)?.cost ??
+                      'Calculating...',
+                  ),
+                )}
+              </Typography>
+            </Grid>
+
+            {
+              // radio buttons for shipping
+              shippingOptions && (
+                <Grid>
+                  <Box sx={{ mt: 3 }}>
+                    <Typography sx={{ fontWeight: 'bold', fontSize: '.9rem' }}>
+                      Shipping Options:
+                    </Typography>
+                    <RadioGroup
+                      value={selectedShippingOption}
+                      onChange={(e) => setSelectedShippingOption(e.target.value)}
+                    >
+                      {shippingOptions.map((option) => (
+                        <FormControlLabel
+                          key={option.id}
+                          value={option.id}
+                          control={<Radio />}
+                          label={
+                            <Typography variant="body2" color="text.secondary">
+                              {option.description} — {priceFormat(option.cost)}
+                            </Typography>
+                          }
+                        />
+                      ))}
+                    </RadioGroup>
+                  </Box>
                 </Grid>
-                <Grid
-                  container
-                  justifyContent="space-between"
-                  sx={{
-                    margin: '4px 0',
-                  }}
-                >
-                  <Typography>{shippingAndTax.taxText}</Typography>
-                  <Typography>{showPrice(shippingAndTax.taxVal)}</Typography>
-                </Grid>
-              </>
-            )}
+              )
+            }
 
             <Grid
               container
@@ -216,7 +379,14 @@ export default function QuoteDetailSummary({
                   color: '#212121',
                 }}
               >
-                {showPrice(priceFormat(+totalAmount))}
+                {showPrice(
+                  priceFormat(
+                    +totalAmount +
+                      +tax +
+                      (shippingOptions?.find((opt) => opt.id === selectedShippingOption)?.cost ??
+                        0),
+                  ),
+                )}
               </Typography>
             </Grid>
           </Box>

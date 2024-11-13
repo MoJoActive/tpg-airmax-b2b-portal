@@ -5,14 +5,12 @@ import { Box, Card, CardContent, Typography } from '@mui/material';
 import { B3CollapseContainer } from '@/components';
 
 interface QuoteTermsAndConditionsProps {
-  quoteLegalTerms: string;
+  quoteTerms: string;
 }
 
 export default function QuoteTermsAndConditions(props: QuoteTermsAndConditionsProps) {
-  const { quoteLegalTerms = '' } = props;
-
-  const [isOpen, setIsOpen] = useState(false);
-
+  const { quoteTerms } = props;
+  const [isOpen, setIsOpen] = useState(true);
   const b3Lang = useB3Lang();
 
   const handleOnChange = (open: boolean) => {
@@ -35,6 +33,7 @@ export default function QuoteTermsAndConditions(props: QuoteTermsAndConditionsPr
         <B3CollapseContainer
           title={b3Lang('quoteDetail.termsAndConditions')}
           handleOnChange={handleOnChange}
+          defaultOpen
         >
           <Box>
             <Typography
@@ -46,7 +45,7 @@ export default function QuoteTermsAndConditions(props: QuoteTermsAndConditionsPr
                 overflow: 'auto',
               }}
             >
-              {quoteLegalTerms}
+              {quoteTerms}
             </Typography>
           </Box>
         </B3CollapseContainer>

@@ -102,7 +102,9 @@ export default defineConfig(({ mode }) => {
         output: {
           entryFileNames(info) {
             const { name } = info;
-            return name.includes('headless') ? '[name].js' : '[name].[hash].js';
+            if (name.includes('headless')) return '[name].js';
+            if (env.VITE_PRODUCTION === 'TRUE') return '[name].[hash].js';
+            return '[name].js';
           },
           manualChunks: {
             reactVendor: ['react', 'react-dom'],

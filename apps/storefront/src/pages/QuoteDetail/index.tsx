@@ -17,6 +17,7 @@ import {
   searchB2BProducts,
   searchBcProducts,
 } from '@/shared/service/b2b';
+import { getCompanyExtraFields } from '@/shared/service/b2b/api/company';
 import {
   activeCurrencyInfoSelector,
   isB2BUserSelector,
@@ -514,6 +515,18 @@ function QuoteDetail() {
 
   useScrollBar(false);
 
+  const [companyLogo, setCompanyLogo] = useState('');
+  const [companyTerms, setCompanyTerms] = useState('');
+
+  useEffect(() => {
+    const getCompanyInfo = async () => {
+      const { logoUrl, terms } = await getCompanyExtraFields(companyInfoId);
+      setCompanyLogo(logoUrl);
+      setCompanyTerms(terms);
+    };
+    getCompanyInfo();
+  }, [companyInfoId]);
+
   return (
     <B3Spin isSpinning={isRequestLoading || quoteCheckoutLoadding}>
       <Box
@@ -533,6 +546,7 @@ function QuoteDetail() {
           role={role}
           quoteTitle={quoteDetail.quoteTitle}
           salesRepInfo={quoteDetail.salesRepInfo}
+          companyLogo={companyLogo}
         />
 
         <Box
@@ -671,7 +685,7 @@ function QuoteDetail() {
                   displayPrint: 'none',
                 }}
               >
-                <QuoteTermsAndConditions quoteLegalTerms={quoteDetail.legalTerms} />
+                <QuoteTermsAndConditions quoteTerms={companyTerms} />
               </Box>
             )}
           </Grid>

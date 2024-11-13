@@ -9,11 +9,13 @@
   ],
   "packageManager": "yarn@1.22.22",
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --no-cache",
     "build:production": "turbo run build",
     "build:staging": "turbo run build:staging",
     "build:tier1": "turbo run build:tier1",
     "dev": "turbo run dev --parallel",
+    "push": "node scripts/deploy.js",
+    "push:dev": "node scripts/deploy.js --dev",
     "lint": "turbo run lint --parallel --continue",
     "format": "turbo run format --parallel --continue",
     "test": "turbo run test",
@@ -27,14 +29,20 @@
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
     "@release-it/conventional-changelog": "^8.0.1",
+    "chalk": "^4.1.2",
     "eslint": "^7.32.0 || ^8.2.0",
     "eslint-config-b2b": "*",
+    "execa": "^5.1.1",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
+    "listr": "^0.14.3",
     "patch-package": "^8.0.0",
+    "path": "^0.12.7",
     "prettier": "^2.8.8",
     "release-it": "^17.2.1",
-    "turbo": "^2.0.3"
+    "turbo": "^2.0.3",
+    "webdav-fs": "^3.0.0",
+    "yargs": "^17.7.2"
   },
   "engines": {
     "node": ">=14.0.0"

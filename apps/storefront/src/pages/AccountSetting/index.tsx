@@ -1,8 +1,8 @@
 import { useContext, useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
-import { Box } from '@mui/material';
+import { Box, FormLabel, styled, TextField } from '@mui/material';
 import trim from 'lodash-es/trim';
 
 import { B3CustomForm } from '@/components';
@@ -21,10 +21,14 @@ import {
   updateB2BAccountSettings,
   updateBCAccountSettings,
 } from '@/shared/service/b2b';
+import { getCompanyExtraFields } from '@/shared/service/b2b/api/company';
+import B3Request from '@/shared/service/request/b3Fetch';
+import { RequestType } from '@/shared/service/request/base';
 import { isB2BUserSelector, useAppSelector } from '@/store';
 import { Fields, ParamProps } from '@/types/accountSetting';
 import { B3SStorage, channelId, snackbar } from '@/utils';
 
+import FileUpload from '../quote/components/FileUpload';
 import { deCodeField, getAccountFormFields } from '../Registered/config';
 
 import { getAccountSettingFiles } from './config';
@@ -178,6 +182,21 @@ function AccountSetting() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [companyLogo, setCompanyLogo] = useState<string>('');
+  const [companyTerms, setCompanyTerms] = useState<string>('');
+  const [termsUpdated, setTermsUpdated] = useState<boolean>(false);
+
+  useEffect(() => {
+    const getLogoAndTerms = async () => {
+      const { logoUrl, terms } = await getCompanyExtraFields(companyId);
+      setCompanyLogo(logoUrl);
+      setValue('companyLogo', logoUrl);
+      setCompanyTerms(terms);
+      setValue('companyTerms', terms);
+    };
+    if (!isBCUser) getLogoAndTerms();
+  }, [isBCUser, companyId, setValue]);
+
   const validateEmailValue = async (emailValue: string) => {
     if (customer.emailAddress === trim(emailValue)) return true;
     const payload = {
@@ -252,6 +271,17 @@ function AccountSetting() {
         let userExtraFields: CustomFieldItems[] = [];
         if (!isBCUser) {
           userExtraFields = handleGetUserExtraFields(data);
+
+          if (termsUpdated) {
+            B3Request.put(`/api/v2/companies/${companyId}/basic-info`, RequestType.B2BRest, {
+              extraFields: [
+                {
+                  fieldName: 'Terms & Conditions',
+                  fieldValue: companyTerms,
+                },
+              ],
+            });
+          }
         }
 
         const dataProcessingFn = !isBCUser ? b2bSubmitDataProcessing : bcSubmitDataProcessing;
@@ -282,8 +312,11 @@ function AccountSetting() {
               delete newParams.confirmPassword;
             }
             await requestFn(newParams);
-          } else {
+          } else if (!termsUpdated) {
             snackbar.success(b3Lang('accountSettings.notification.noEdits'));
+            return;
+          } else {
+            snackbar.success(b3Lang('accountSettings.notification.detailsUpdated'));
             return;
           }
 
@@ -304,52 +337,160 @@ function AccountSetting() {
     })();
   };
 
+  const FormControl = styled(Box)(({ theme }) => ({
+    marginBottom: theme.spacing(2),
+    '& .MuiFormLabel-root': {
+      marginBottom: '5px',
+      display: 'block',
+    },
+    '& .MuiTextField-root': {
+      width: '100%',
+    },
+    '& input, & .MuiFormControl-root .MuiTextField-root, & .MuiSelect-select.MuiSelect-filled, & .MuiTextField-root .MuiInputBase-multiline':
+      {
+        backgroundColor: b3HexToRgb('#FFFFFF', 0.87),
+        borderRadius: '4px',
+        borderBottomLeftRadius: '0',
+        borderBottomRightRadius: '0',
+      },
+  }));
+
   return (
     <B3Spin isSpinning={isloadding} background={backgroundColor}>
       <Box
         sx={{
-          width: `${isMobile ? '100%' : '35%'}`,
-          minHeight: `${isMobile ? '800px' : '300px'}`,
-          '& input, & .MuiFormControl-root .MuiTextField-root, & .MuiSelect-select.MuiSelect-filled, & .MuiTextField-root .MuiInputBase-multiline':
-            {
-              bgcolor: b3HexToRgb('#FFFFFF', 0.87),
-              borderRadius: '4px',
-              borderBottomLeftRadius: '0',
-              borderBottomRightRadius: '0',
-            },
-          '& .MuiButtonBase-root.MuiCheckbox-root:not(.Mui-checked), & .MuiRadio-root:not(.Mui-checked)':
-            {
-              color: b3HexToRgb(getContrastColor(backgroundColor), 0.6),
-            },
-          '& .MuiTypography-root.MuiTypography-body1.MuiFormControlLabel-label, & .MuiFormControl-root .MuiFormLabel-root:not(.Mui-focused)':
-            {
-              color: b3HexToRgb(getContrastColor(backgroundColor), 0.87),
-            },
-          '& .MuiInputLabel-root.MuiInputLabel-formControl:not(.Mui-focused)': {
-            color: b3HexToRgb(getContrastColor('#FFFFFF'), 0.6),
-          },
+          display: 'flex',
+          justifyContent: 'flex-start',
+          alignItems: 'flex-start',
+          gap: '3rem',
         }}
       >
-        <B3CustomForm
-          formFields={accountInfoFormFields}
-          errors={errors}
-          control={control}
-          getValues={getValues}
-          setValue={setValue}
-        />
-
-        <CustomButton
+        <Box
           sx={{
-            mt: '28px',
-            mb: `${isMobile ? '20px' : '0'}`,
-            width: '100%',
-            visibility: `${isVisible ? 'visible' : 'hidden'}`,
+            width: `${isMobile ? '100%' : '35%'}`,
+            minHeight: `${isMobile ? '800px' : '300px'}`,
+            '& input, & .MuiFormControl-root .MuiTextField-root, & .MuiSelect-select.MuiSelect-filled, & .MuiTextField-root .MuiInputBase-multiline':
+              {
+                bgcolor: b3HexToRgb('#FFFFFF', 0.87),
+                borderRadius: '4px',
+                borderBottomLeftRadius: '0',
+                borderBottomRightRadius: '0',
+              },
+            '& .MuiButtonBase-root.MuiCheckbox-root:not(.Mui-checked), & .MuiRadio-root:not(.Mui-checked)':
+              {
+                color: b3HexToRgb(getContrastColor(backgroundColor), 0.6),
+              },
+            '& .MuiTypography-root.MuiTypography-body1.MuiFormControlLabel-label, & .MuiFormControl-root .MuiFormLabel-root:not(.Mui-focused)':
+              {
+                color: b3HexToRgb(getContrastColor(backgroundColor), 0.87),
+              },
+            '& .MuiInputLabel-root.MuiInputLabel-formControl:not(.Mui-focused)': {
+              color: b3HexToRgb(getContrastColor('#FFFFFF'), 0.6),
+            },
           }}
-          onClick={handleAddUserClick}
-          variant="contained"
         >
-          {b3Lang('accountSettings.button.saveUpdates')}
-        </CustomButton>
+          <B3CustomForm
+            formFields={accountInfoFormFields}
+            errors={errors}
+            control={control}
+            getValues={getValues}
+            setValue={setValue}
+          />
+
+          <CustomButton
+            sx={{
+              mt: '28px',
+              mb: `${isMobile ? '20px' : '0'}`,
+              width: '100%',
+              visibility: `${isVisible ? 'visible' : 'hidden'}`,
+            }}
+            onClick={handleAddUserClick}
+            variant="contained"
+          >
+            {b3Lang('accountSettings.button.saveUpdates')}
+          </CustomButton>
+        </Box>
+
+        {!isBCUser && (
+          <Box sx={{ width: '400px' }}>
+            <FormControl>
+              <FormLabel>Company logo:</FormLabel>
+              {companyLogo && (
+                <Box
+                  sx={{
+                    mb: 2,
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                    '& img': {
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      backgroundColor: b3HexToRgb('#FFFFFF', 0.87),
+                    },
+                  }}
+                >
+                  <img
+                    src={companyLogo}
+                    alt="Company Logo"
+                    style={{
+                      maxWidth: '400px',
+                      maxHeight: '400px',
+                    }}
+                  />
+                </Box>
+              )}
+              <FormLabel>Upload new logo:</FormLabel>
+              <FileUpload
+                fileList={[]}
+                allowUpload
+                fileNumber={1}
+                maxFileSize={5242880}
+                acceptedFiles={['image/*']}
+                requestType="companyAttachedFile"
+                tips="Upload an image file up to 5MB"
+                onchange={async (fileObj) => {
+                  if (fileObj?.fileUrl) {
+                    snackbar.success('Logo uploaded successfully.');
+                    setCompanyLogo(fileObj.fileUrl);
+                    B3Request.put(
+                      `/api/v2/companies/${companyId}/basic-info`,
+                      RequestType.B2BRest,
+                      {
+                        extraFields: [
+                          {
+                            fieldName: 'Logo URL',
+                            fieldValue: fileObj.fileUrl,
+                          },
+                        ],
+                      },
+                    );
+                  } else snackbar.error(b3Lang('intl.global.fileUpload.fileUploadFailure'));
+                }}
+              />
+            </FormControl>
+            <FormControl sx={{ marginTop: '3rem' }}>
+              <Controller
+                name="companyTerms"
+                control={control}
+                defaultValue={companyTerms}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    onBlur={() => {
+                      if (!termsUpdated) setTermsUpdated(true);
+                      setCompanyTerms(field.value);
+                      setTermsUpdated(true);
+                    }}
+                    label="Terms & Conditions"
+                    multiline
+                    rows={8}
+                    variant="filled"
+                  />
+                )}
+              />
+            </FormControl>
+          </Box>
+        )}
       </Box>
     </B3Spin>
   );
