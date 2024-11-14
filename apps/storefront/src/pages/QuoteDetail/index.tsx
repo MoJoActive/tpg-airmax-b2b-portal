@@ -73,6 +73,8 @@ function QuoteDetail() {
   const b3Lang = useB3Lang();
 
   const [quoteDetail, setQuoteDetail] = useState<any>({});
+  const [showRetailQuote, setShowRetailQuote] = useState<boolean>(false);
+
   const [productList, setProductList] = useState<any>([]);
   const [fileList, setFileList] = useState<any>([]);
   const [isHandleApprove, setHandleApprove] = useState<boolean>(false);
@@ -86,6 +88,14 @@ function QuoteDetail() {
     shipping: 0,
     totalAmount: 0,
   });
+  const [retailQuoteSummary, setRetailQuoteSummary] = useState<any>({
+    originalSubtotal: 0,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    totalAmount: 0,
+  });
+
   const [isRequestLoading, setIsRequestLoading] = useState(false);
   const [isShowFooter, setIsShowFooter] = useState(false);
   const [quoteDetailTax, setQuoteDetailTax] = useState(0);
@@ -264,6 +274,57 @@ function QuoteDetail() {
         shipping: quote.shippingTotal,
         totalAmount: quote.totalAmount,
       });
+
+      // generate same quote but with MSRPs
+
+      const { currency_code: currencyCode } = currency as Currency;
+      const productIds = quote.productsList.map(
+        (product: { productId: number }) => product.productId,
+      );
+
+      const getProducts = isB2BUser ? searchB2BProducts : searchBcProducts;
+      const { productsSearch } = await getProducts({
+        productIds,
+        currencyCode,
+        companyId: companyInfoId,
+        customerGroupId: 2, // "Retail" customer group
+      });
+
+      const retailProducts = conversionProductsList(productsSearch);
+      const newQuote = { ...quote };
+
+      newQuote.productsList.forEach((product: any, index: number) => {
+        const retailProduct = retailProducts.find(
+          (p: any) => p.id === parseInt(product.productId, 10),
+        );
+
+        if (retailProduct) {
+          const selectedVariant = retailProduct.variants.find(
+            (v: any) => v.variant_id === parseInt(product.variantId, 10),
+          );
+
+          if (selectedVariant) {
+            newQuote.productsList[index].basePrice = selectedVariant.calculated_price;
+            newQuote.productsList[index].offeredPrice = selectedVariant.calculated_price;
+          }
+        }
+      });
+
+      const newTotal = newQuote.productsList.reduce((total: number, product: any) => {
+        return total + product.basePrice * product.quantity;
+      }, 0);
+
+      newQuote.subtotal = newTotal.toString();
+      newQuote.grandTotal = newTotal.toString();
+      newQuote.totalAmount = newTotal.toString();
+
+      setRetailQuoteSummary({
+        originalSubtotal: newTotal,
+        discount: 0,
+        tax: newQuote.taxTotal,
+        totalAmount: newTotal.toString(),
+      });
+
       setProductList(productsWithMoreInfo);
 
       if (+quote.shippingTotal === 0) {
@@ -547,6 +608,7 @@ function QuoteDetail() {
           quoteTitle={quoteDetail.quoteTitle}
           salesRepInfo={quoteDetail.salesRepInfo}
           companyLogo={companyLogo}
+          setShowRetailQuote={setShowRetailQuote}
         />
 
         <Box
@@ -606,7 +668,7 @@ function QuoteDetail() {
                 isHandleApprove={isHandleApprove}
                 getQuoteTableDetails={getQuoteTableDetails}
                 getTaxRate={getTaxRate}
-                displayDiscount={quoteDetail.displayDiscount}
+                displayDiscount={showRetailQuote ? false : quoteDetail.displayDiscount}
               />
             </Box>
           </Grid>
@@ -632,7 +694,7 @@ function QuoteDetail() {
             >
               <QuoteDetailSummary
                 isHideQuoteCheckout={isHideQuoteCheckout}
-                quoteSummary={quoteSummary}
+                quoteSummary={showRetailQuote ? retailQuoteSummary : quoteSummary}
                 quoteDetailTax={quoteDetailTax}
                 status={quoteDetail.status}
                 quoteDetail={quoteDetail}

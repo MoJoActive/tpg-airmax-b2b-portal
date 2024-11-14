@@ -106,7 +106,9 @@ export default function QuoteDetailSummary({
   const [selectedShippingOption, setSelectedShippingOption] = useState<string | null>(null);
 
   useEffect(() => {
-    const getShippingAndTax = async () => {
+    const getShippingOptions = async () => {
+      if (shippingOptions) return;
+
       const lineItems = quoteDetail?.productsList?.map((item: CartItem) => ({
         itemId: item.productId,
         productId: item.productId,
@@ -126,12 +128,6 @@ export default function QuoteDetailSummary({
             },
           });
         }
-
-        await deleteCart({
-          deleteCartInput: {
-            cartEntityId: '62b123f0-5f76-4761-bdc1-4d5eb0e4c3d9',
-          },
-        });
 
         const tempCart: {
           id?: string;
@@ -216,8 +212,8 @@ export default function QuoteDetailSummary({
       }
     };
 
-    getShippingAndTax();
-  }, [quoteDetail]);
+    getShippingOptions();
+  }, [quoteDetail, shippingOptions]);
 
   const showPrice = (price: string | number | null): string | number => {
     if (isHideQuoteCheckout) return b3Lang('quoteDraft.quoteSummary.tbd');
@@ -226,6 +222,7 @@ export default function QuoteDetailSummary({
 
   const subtotalPrice = +originalSubtotal;
   const quotedSubtotal = +originalSubtotal - +discount;
+
   return (
     <Card>
       <CardContent>

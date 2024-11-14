@@ -31,6 +31,7 @@ interface QuoteDetailHeaderProps {
   quoteTitle: string;
   salesRepInfo: { [key: string]: string };
   companyLogo: string;
+  setShowRetailQuote: (show: boolean) => void;
 }
 
 function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
@@ -49,6 +50,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
     quoteTitle,
     salesRepInfo,
     companyLogo,
+    setShowRetailQuote,
   } = props;
 
   const exportPdf = async () => {
@@ -75,7 +77,13 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
       (el as HTMLElement).style.display = 'none';
     });
 
+    setShowRetailQuote(true);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
     const clonedElement = elementToExport.cloneNode(true) as HTMLElement;
+    setShowRetailQuote(false);
+
     clonedElement.style.cssText = `
       background: #ccc;
       width: ${pxWidth}px;
@@ -98,7 +106,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
           // @ts-expect-error CSS style assignment
           el.style[style as keyof CSSStyleDeclaration] = computed.getPropertyValue(style);
         } catch {
-          // ignore read-only properties
+          /* ignore read-only properties */
         }
       });
 
@@ -172,6 +180,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
     } catch (err) {
       snackbar.error('Failed to generate PDF.');
     } finally {
+      setShowRetailQuote(false);
       document.body.removeChild(tempIframe);
     }
   };
