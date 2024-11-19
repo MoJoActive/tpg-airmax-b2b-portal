@@ -370,5 +370,6 @@ function PaginationTable(
 }
 
 const B3PaginationTable = memo(forwardRef(PaginationTable));
+const UnMemoizedB3PaginationTable = forwardRef(PaginationTable);
 
-export { B3PaginationTable };
+export { B3PaginationTable, UnMemoizedB3PaginationTable };

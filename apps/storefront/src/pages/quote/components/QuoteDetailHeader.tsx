@@ -1,8 +1,8 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
 import { ArrowBackIosNew } from '@mui/icons-material';
-import { Box, Grid, styled, Typography, useTheme } from '@mui/material';
+import { Box, FormControlLabel, Grid, styled, Switch, Typography, useTheme } from '@mui/material';
 import html2pdf from 'html2pdf.js';
 
 import CustomButton from '@/components/button/CustomButton';
@@ -31,11 +31,14 @@ interface QuoteDetailHeaderProps {
   quoteTitle: string;
   salesRepInfo: { [key: string]: string };
   companyLogo: string;
+  showRetailQuote: boolean;
   setShowRetailQuote: (show: boolean) => void;
+  setIsRequestLoading: (loading: boolean) => void;
 }
 
 function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
   const iframeDocument = useAppSelector((state) => state.theme.themeFrame);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [isMobile] = useMobile();
   const b3Lang = useB3Lang();
 
@@ -44,14 +47,56 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
     quoteNumber,
     issuedAt,
     expirationDate,
-    // exportPdf,
-    printQuote,
     role,
     quoteTitle,
     salesRepInfo,
     companyLogo,
+    showRetailQuote,
     setShowRetailQuote,
+    setIsRequestLoading,
   } = props;
+
+  // hardcode all the CSS piecemeal
+  const applyComputedStyles = (sourceElement: Element, targetElement: Element) => {
+    const el = targetElement as HTMLElement;
+    const computed = window.getComputedStyle(sourceElement);
+
+    Array.from(computed).forEach((style: string) => {
+      try {
+        // @ts-expect-error CSS style assignment
+        el.style[style as keyof CSSStyleDeclaration] = computed.getPropertyValue(style);
+      } catch {
+        /* ignore read-only properties */
+      }
+    });
+
+    Array.from(sourceElement.children).forEach((child: Element, index: number) => {
+      if (targetElement.children[index]) applyComputedStyles(child, targetElement.children[index]);
+    });
+
+    // prevent text wrapping
+    // except on contact/billing/shipping, terms, and notes
+    if (!el.matches('#quote-info *, #quote-terms *, #quote-notes *'))
+      el.style.whiteSpace = 'nowrap';
+  };
+
+  // doctor front-end elements for retail quote
+  useEffect(() => {
+    const paginationElements = iframeDocument
+      ? iframeDocument.querySelectorAll(
+          '#quote-table .MuiTablePagination-selectLabel,' +
+            '#quote-table .MuiTablePagination-input,' +
+            '#quote-table .MuiTablePagination-actions',
+        )
+      : null;
+
+    paginationElements?.forEach((el: HTMLElement | Element) => {
+      const element = el as HTMLElement;
+      if (showRetailQuote) element.style.display = 'none';
+      else if (element.classList.contains('input')) element.style.display = 'flex';
+      else element.style.display = 'block';
+    });
+  }, [showRetailQuote, iframeDocument]);
 
   const exportPdf = async () => {
     if (!iframeDocument) {
@@ -59,35 +104,30 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
       return;
     }
 
-    const elementToExport = iframeDocument.querySelector('.css-b95f0i') as HTMLElement;
+    const elementToExport = iframeDocument.querySelector('#quote-detail-container') as HTMLElement;
     if (!elementToExport) {
       snackbar.error('Could not find element to export.');
       return;
     }
 
-    // 8.5" at 300dpi
-    const pxWidth = 2550;
+    // almost, but not quite, 8.5" at 300dpi
+    const arbitraryPxWidth = 2275;
 
-    // temporarily hiding elements here and re-revealing after PDF is exported
-    // the canvas used for generating the PDF doesn't reflow properly otherwise
-    const elementsToHide = elementToExport.querySelectorAll(
-      '.css-1shru2k, .css-133bwhb, .css-15ggtf1, .css-vubbuv, .css-rfnosa, .css-for3ya',
-    );
-    elementsToHide.forEach((el) => {
-      (el as HTMLElement).style.display = 'none';
-    });
-
+    const shouldShowRetailQuote = showRetailQuote;
+    setIsRequestLoading(true);
+    setIsPrinting(true);
     setShowRetailQuote(true);
+
+    // give time to render
     await new Promise((resolve) => {
       setTimeout(resolve, 10);
     });
-    const clonedElement = elementToExport.cloneNode(true) as HTMLElement;
-    setShowRetailQuote(false);
 
+    const clonedElement = elementToExport.cloneNode(true) as HTMLElement;
     clonedElement.style.cssText = `
       background: #ccc;
-      width: ${pxWidth}px;
-      max-width: ${pxWidth}px;
+      width: ${arbitraryPxWidth}px;
+      max-width: ${arbitraryPxWidth}px;
       margin: 0 auto;
       padding: 0;
       overflow: hidden;
@@ -95,67 +135,9 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
       box-sizing: border-box;
     `;
 
-    // hardcode all the CSS piecemeal
-    const applyComputedStyles = (sourceElement: Element, targetElement: Element) => {
-      const el = targetElement as HTMLElement;
-
-      const computed = window.getComputedStyle(sourceElement);
-
-      Array.from(computed).forEach((style: string) => {
-        try {
-          // @ts-expect-error CSS style assignment
-          el.style[style as keyof CSSStyleDeclaration] = computed.getPropertyValue(style);
-        } catch {
-          /* ignore read-only properties */
-        }
-      });
-
-      Array.from(sourceElement.children).forEach((child: Element, index: number) => {
-        if (targetElement.children[index])
-          applyComputedStyles(child, targetElement.children[index]);
-      });
-
-      // prevent text wrapping except on contact/billing/shipping and terms
-      if (!el.matches('.css-9l3uo3, .css-qjqsn3')) el.style.whiteSpace = 'nowrap';
-
-      // remove bottom border on product table
-      if (el.matches('.css-1xnox0e > tr:last-child > td')) el.style.borderBottom = 'none';
-
-      // reveal logo and adjust positioning
-      if (el.matches('.company-logo')) {
-        el.style.display = 'block';
-        el.style.position = 'relative';
-        el.style.top = '20px';
-        el.style.left = '-20px';
-      }
-
-      // reveal terms
-      if (el.matches('.css-my9yfq')) el.style.display = 'block';
-    };
-
-    const tempIframe = document.createElement('iframe');
-
     try {
       applyComputedStyles(elementToExport, clonedElement);
-      tempIframe.style.position = 'absolute';
-      tempIframe.style.left = '-9999px';
-      document.body.appendChild(tempIframe);
-
-      // revealing hidden elements
-      elementsToHide.forEach((el) => {
-        (el as HTMLElement).style.display = '';
-      });
-
-      const iframeDoc = tempIframe.contentDocument!;
-      iframeDoc.open();
-      iframeDoc.write(`
-        <html>
-          <body>
-            ${clonedElement.outerHTML}
-          </body>
-        </html>
-      `);
-      iframeDoc.close();
+      setShowRetailQuote(shouldShowRetailQuote);
 
       const options = {
         margin: 20,
@@ -164,8 +146,8 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
           scale: 2,
           useCORS: true,
           logging: true,
-          width: pxWidth,
-          windowWidth: pxWidth,
+          width: arbitraryPxWidth,
+          windowWidth: arbitraryPxWidth,
         },
         jsPDF: {
           unit: 'px',
@@ -180,8 +162,9 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
     } catch (err) {
       snackbar.error('Failed to generate PDF.');
     } finally {
-      setShowRetailQuote(false);
-      document.body.removeChild(tempIframe);
+      setIsPrinting(false);
+      setShowRetailQuote(shouldShowRetailQuote);
+      setIsRequestLoading(false);
     }
   };
 
@@ -207,10 +190,9 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
 
   return (
     <>
-      {+role !== 100 && (
+      {!isPrinting && +role !== 100 && (
         <Box
           sx={{
-            marginBottom: '10px',
             width: 'fit-content',
             displayPrint: 'none',
           }}
@@ -252,6 +234,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
+          width: '100%',
           flexDirection: `${isMobile ? 'column' : 'row'}`,
           mb: `${isMobile ? '16px' : ''}`,
         }}
@@ -261,6 +244,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
           {...gridOptions(8)}
           sx={{
             color: customColor,
+            paddingTop: isPrinting ? '0' : '3rem !important',
           }}
         >
           <Box
@@ -344,45 +328,95 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
           </Box>
         </Grid>
 
-        {companyLogo && (
-          <Box className="company-logo" sx={{ display: 'none' }}>
-            <img
-              src={companyLogo}
-              alt="Company Logo"
-              style={{
-                maxWidth: '400px',
-                maxHeight: '400px',
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginBottom: '1rem',
+            marginRight: '-1rem',
+            marginTop: '-.25rem',
+          }}
+        >
+          {!isPrinting && +role !== 100 && (
+            <Grid
+              item
+              sx={{
+                alignSelf: 'flex-end',
+                maxWidth: '100% !important',
+                textAlign: `${isMobile ? 'none' : 'end'}`,
+                displayPrint: 'none',
               }}
-            />
-          </Box>
-        )}
-
-        {+role !== 100 && (
-          <Grid
-            item
-            sx={{
-              textAlign: `${isMobile ? 'none' : 'end'}`,
-              displayPrint: 'none',
-            }}
-            {...gridOptions(4)}
-          >
-            <Box>
-              <CustomButton
-                variant="outlined"
+              {...gridOptions(4)}
+            >
+              <Box
                 sx={{
-                  marginRight: '1rem',
-                  displayPrint: 'none',
+                  display: 'inline-flex',
+                  flexDirection: 'row-reverse',
+                  alignItems: 'center',
+                  gap: '1.5rem',
                 }}
-                onClick={printQuote}
               >
-                {b3Lang('quoteDetail.header.print')}
-              </CustomButton>
-              <CustomButton variant="outlined" onClick={exportPdf}>
-                {b3Lang('quoteDetail.header.downloadPDF')}
-              </CustomButton>
+                <CustomButton
+                  variant="contained"
+                  onClick={exportPdf}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    width: '100%;',
+                  }}
+                >
+                  {b3Lang('quoteDetail.header.downloadPDF')}
+                </CustomButton>
+                <FormControlLabel
+                  label={
+                    <Typography
+                      variant="body2"
+                      sx={{ display: 'inline', whiteSpace: 'nowrap', userSelect: 'none' }}
+                    >
+                      Show retail quote
+                    </Typography>
+                  }
+                  control={
+                    <Switch
+                      checked={showRetailQuote}
+                      onChange={(event) => setShowRetailQuote(event.target.checked)}
+                      name="showRetailQuote"
+                      color="primary"
+                    />
+                  }
+                  sx={{
+                    margin: '0',
+                    display: 'flex',
+                    width: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                />
+              </Box>
+            </Grid>
+          )}
+
+          {showRetailQuote && companyLogo && (
+            <Box
+              sx={{
+                alignSelf: 'flex-end',
+                marginTop: isPrinting ? '0' : '-1rem',
+              }}
+            >
+              <img
+                src={companyLogo}
+                alt="Company Logo"
+                style={{
+                  maxWidth: '400px',
+                  maxHeight: '400px',
+                  position: 'relative',
+                  top: isPrinting ? '1.75rem' : '0',
+                  left: isPrinting ? '-1.25rem' : '0',
+                }}
+              />
             </Box>
-          </Grid>
-        )}
+          )}
+        </Box>
       </Grid>
     </>
   );

@@ -223,6 +223,7 @@ function FileUpload(props: FileUploadProps, ref: Ref<unknown>) {
   return (
     <B3Spin isSpinning={loading}>
       <Box
+        className="file-upload-container"
         sx={{
           padding: '12px 0 0',
           width: '100%',
@@ -260,6 +261,7 @@ function FileUpload(props: FileUploadProps, ref: Ref<unknown>) {
         </Box>
         {allowUpload && (
           <Box
+            className="file-upload"
             sx={{
               display: 'flex',
               justifyContent: 'space-between',

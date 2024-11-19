@@ -30,6 +30,7 @@ interface QuoteDetailSummaryProps {
   status: string;
   quoteDetail: CustomFieldItems;
   isHideQuoteCheckout: boolean;
+  showRetailQuote: boolean;
 }
 
 interface CartItem {
@@ -67,6 +68,7 @@ export default function QuoteDetailSummary({
   status,
   quoteDetail,
   isHideQuoteCheckout,
+  showRetailQuote,
 }: QuoteDetailSummaryProps) {
   const b3Lang = useB3Lang();
   const enteredInclusiveTax = useAppSelector(
@@ -327,7 +329,7 @@ export default function QuoteDetailSummary({
 
             {
               // radio buttons for shipping
-              shippingOptions && (
+              !showRetailQuote && shippingOptions && (
                 <Grid>
                   <Box sx={{ mt: 3 }}>
                     <Typography sx={{ fontWeight: 'bold', fontSize: '.9rem' }}>

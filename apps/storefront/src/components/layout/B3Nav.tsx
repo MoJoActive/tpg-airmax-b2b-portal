@@ -117,6 +117,7 @@ export default function B3Nav({ closeSidebar }: B3NavProps) {
 
   return (
     <List
+      id="b2b-nav"
       sx={{
         width: '100%',
         maxWidth: 360,
@@ -174,7 +175,7 @@ export default function B3Nav({ closeSidebar }: B3NavProps) {
         );
       })}
 
-      <Divider />
+      <Divider id="nav-divider" />
 
       <ListItem key="marketing-pricing" disablePadding>
         <ListItemButton

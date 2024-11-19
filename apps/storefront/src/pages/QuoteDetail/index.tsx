@@ -291,9 +291,9 @@ function QuoteDetail() {
       });
 
       const retailProducts = conversionProductsList(productsSearch);
-      const newQuote = { ...quote };
+      let retailTotal = 0;
 
-      newQuote.productsList.forEach((product: any, index: number) => {
+      quote.productsList.forEach((product: any) => {
         const retailProduct = retailProducts.find(
           (p: any) => p.id === parseInt(product.productId, 10),
         );
@@ -303,29 +303,21 @@ function QuoteDetail() {
             (v: any) => v.variant_id === parseInt(product.variantId, 10),
           );
 
-          if (selectedVariant) {
-            newQuote.productsList[index].basePrice = selectedVariant.calculated_price;
-            newQuote.productsList[index].offeredPrice = selectedVariant.calculated_price;
-          }
+          product.retailPrice = selectedVariant?.calculated_price ?? product.basePrice;
+          retailTotal += product.retailPrice * product.quantity;
+        } else {
+          product.retailPrice = product.basePrice;
+          retailTotal += product.retailPrice * product.quantity;
         }
       });
 
-      const newTotal = newQuote.productsList.reduce((total: number, product: any) => {
-        return total + product.basePrice * product.quantity;
-      }, 0);
-
-      newQuote.subtotal = newTotal.toString();
-      newQuote.grandTotal = newTotal.toString();
-      newQuote.totalAmount = newTotal.toString();
-
-      setRetailQuoteSummary({
-        originalSubtotal: newTotal,
-        discount: 0,
-        tax: newQuote.taxTotal,
-        totalAmount: newTotal.toString(),
-      });
-
       setProductList(productsWithMoreInfo);
+      setRetailQuoteSummary({
+        originalSubtotal: retailTotal,
+        discount: 0,
+        tax: quote.taxTotal,
+        totalAmount: retailTotal.toString(),
+      });
 
       if (+quote.shippingTotal === 0) {
         setQuoteDetailTax(+quote.taxTotal);
@@ -591,6 +583,7 @@ function QuoteDetail() {
   return (
     <B3Spin isSpinning={isRequestLoading || quoteCheckoutLoadding}>
       <Box
+        id="quote-detail-container"
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -608,10 +601,13 @@ function QuoteDetail() {
           quoteTitle={quoteDetail.quoteTitle}
           salesRepInfo={quoteDetail.salesRepInfo}
           companyLogo={companyLogo}
+          showRetailQuote={showRetailQuote}
           setShowRetailQuote={setShowRetailQuote}
+          setIsRequestLoading={setIsRequestLoading}
         />
 
         <Box
+          id="quote-info"
           sx={{
             marginTop: '1rem',
           }}
@@ -668,12 +664,14 @@ function QuoteDetail() {
                 isHandleApprove={isHandleApprove}
                 getQuoteTableDetails={getQuoteTableDetails}
                 getTaxRate={getTaxRate}
-                displayDiscount={showRetailQuote ? false : quoteDetail.displayDiscount}
+                displayDiscount={quoteDetail.displayDiscount}
+                showRetailQuote={showRetailQuote}
               />
             </Box>
           </Grid>
 
           <Grid
+            id="quote-overview"
             item
             xs={isMobile ? 12 : 4}
             rowSpacing={0}
@@ -698,11 +696,13 @@ function QuoteDetail() {
                 quoteDetailTax={quoteDetailTax}
                 status={quoteDetail.status}
                 quoteDetail={quoteDetail}
+                showRetailQuote={showRetailQuote}
               />
             </Box>
 
             {quoteDetail.notes && (
               <Box
+                id="quote-notes"
                 sx={{
                   marginBottom: '1rem',
                   displayPrint: 'none',
@@ -712,37 +712,42 @@ function QuoteDetail() {
               </Box>
             )}
 
-            <Box
-              sx={{
-                marginBottom: '1rem',
-                displayPrint: 'none',
-              }}
-            >
-              <Message
-                id={id}
-                status={quoteDetail.status}
-                isB2BUser={isB2BUser}
-                email={emailAddress || ''}
-                msgs={quoteDetail?.trackingHistory || []}
-              />
-            </Box>
+            {!showRetailQuote && (
+              <>
+                <Box
+                  sx={{
+                    marginBottom: '1rem',
+                    displayPrint: 'none',
+                  }}
+                >
+                  <Message
+                    id={id}
+                    status={quoteDetail.status}
+                    isB2BUser={isB2BUser}
+                    email={emailAddress || ''}
+                    msgs={quoteDetail?.trackingHistory || []}
+                  />
+                </Box>
 
-            <Box
-              sx={{
-                marginBottom: '1rem',
-                displayPrint: 'none',
-              }}
-            >
-              <QuoteAttachment
-                allowUpload={+quoteDetail.status !== 4}
-                quoteId={quoteDetail.id}
-                status={quoteDetail.status}
-                defaultFileList={fileList}
-              />
-            </Box>
+                <Box
+                  sx={{
+                    marginBottom: '1rem',
+                    displayPrint: 'none',
+                  }}
+                >
+                  <QuoteAttachment
+                    allowUpload={+quoteDetail.status !== 4}
+                    quoteId={quoteDetail.id}
+                    status={quoteDetail.status}
+                    defaultFileList={fileList}
+                  />
+                </Box>
+              </>
+            )}
 
-            {quoteDetail.legalTerms && (
+            {showRetailQuote && quoteDetail.legalTerms && (
               <Box
+                id="quote-terms"
                 sx={{
                   displayPrint: 'none',
                 }}
