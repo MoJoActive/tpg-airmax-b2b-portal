@@ -33,6 +33,7 @@ interface QuoteDetailHeaderProps {
   companyLogo: string;
   showRetailQuote: boolean;
   setShowRetailQuote: (show: boolean) => void;
+  isRequestLoading: boolean;
   setIsRequestLoading: (loading: boolean) => void;
 }
 
@@ -53,6 +54,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
     companyLogo,
     showRetailQuote,
     setShowRetailQuote,
+    isRequestLoading,
     setIsRequestLoading,
   } = props;
 
@@ -75,30 +77,40 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
     });
 
     // prevent text wrapping
-    // except on contact/billing/shipping, terms, and notes
-    if (!el.matches('#quote-info *, #quote-terms *, #quote-notes *'))
+    // except on quote-info header, terms, notes, shipping options, product titles
+    if (
+      !el.matches('#quote-info *, #quote-terms *, #quote-notes *, #shipping-options *, .css-xj83u6')
+    )
       el.style.whiteSpace = 'nowrap';
   };
 
   // doctor front-end elements for retail quote
   useEffect(() => {
-    const paginationElements = iframeDocument
+    const selectBox = iframeDocument
       ? iframeDocument.querySelectorAll(
           '#quote-table .MuiTablePagination-selectLabel,' +
-            '#quote-table .MuiTablePagination-input,' +
-            '#quote-table .MuiTablePagination-actions',
+            '#quote-table .MuiTablePagination-input',
         )
       : null;
 
-    paginationElements?.forEach((el: HTMLElement | Element) => {
+    const paginators = iframeDocument
+      ? iframeDocument.querySelectorAll('#quote-table .MuiTablePagination-actions')
+      : null;
+
+    selectBox?.forEach((el: HTMLElement | Element) => {
       const element = el as HTMLElement;
-      if (showRetailQuote) element.style.display = 'none';
-      else if (element.classList.contains('input')) element.style.display = 'flex';
+      if (isPrinting) element.style.opacity = '0';
+      else element.style.opacity = '1';
+    });
+
+    paginators?.forEach((el: HTMLElement | Element) => {
+      const element = el as HTMLElement;
+      if (isPrinting) element.style.display = 'none';
       else element.style.display = 'block';
     });
-  }, [showRetailQuote, iframeDocument]);
+  }, [isPrinting, iframeDocument]);
 
-  const exportPdf = async () => {
+  const exportPdf = async (isRetail: boolean) => {
     if (!iframeDocument) {
       snackbar.error('Could not access document.');
       return;
@@ -110,24 +122,24 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
       return;
     }
 
-    // almost, but not quite, 8.5" at 300dpi
-    const arbitraryPxWidth = 2275;
+    // 8.5" at 300dpi
+    const pxWidth = 2550;
 
     const shouldShowRetailQuote = showRetailQuote;
     setIsRequestLoading(true);
     setIsPrinting(true);
-    setShowRetailQuote(true);
+    setShowRetailQuote(isRetail);
 
     // give time to render
     await new Promise((resolve) => {
-      setTimeout(resolve, 10);
+      setTimeout(resolve, 250);
     });
 
     const clonedElement = elementToExport.cloneNode(true) as HTMLElement;
     clonedElement.style.cssText = `
       background: #ccc;
-      width: ${arbitraryPxWidth}px;
-      max-width: ${arbitraryPxWidth}px;
+      width: ${pxWidth}px;
+      max-width: ${pxWidth}px;
       margin: 0 auto;
       padding: 0;
       overflow: hidden;
@@ -146,8 +158,8 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
           scale: 2,
           useCORS: true,
           logging: true,
-          width: arbitraryPxWidth,
-          windowWidth: arbitraryPxWidth,
+          width: pxWidth,
+          windowWidth: pxWidth,
         },
         jsPDF: {
           unit: 'px',
@@ -237,6 +249,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
           width: '100%',
           flexDirection: `${isMobile ? 'column' : 'row'}`,
           mb: `${isMobile ? '16px' : ''}`,
+          flexFlow: 'nowrap',
         }}
       >
         <Grid
@@ -335,10 +348,10 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
             alignItems: 'center',
             marginBottom: '1rem',
             marginRight: '-1rem',
-            marginTop: '-.25rem',
+            marginTop: '-1rem',
           }}
         >
-          {!isPrinting && +role !== 100 && (
+          {!isRequestLoading && +role !== 100 && (
             <Grid
               item
               sx={{
@@ -352,21 +365,10 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
               <Box
                 sx={{
                   display: 'inline-flex',
-                  flexDirection: 'row-reverse',
                   alignItems: 'center',
                   gap: '1.5rem',
                 }}
               >
-                <CustomButton
-                  variant="contained"
-                  onClick={exportPdf}
-                  sx={{
-                    whiteSpace: 'nowrap',
-                    width: '100%;',
-                  }}
-                >
-                  {b3Lang('quoteDetail.header.downloadPDF')}
-                </CustomButton>
                 <FormControlLabel
                   label={
                     <Typography
@@ -392,6 +394,26 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
                     justifyContent: 'center',
                   }}
                 />
+                <CustomButton
+                  variant="outlined"
+                  onClick={() => exportPdf(false)}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    width: '100%;',
+                  }}
+                >
+                  Download B2B PDF
+                </CustomButton>
+                <CustomButton
+                  variant="contained"
+                  onClick={() => exportPdf(true)}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    width: '100%;',
+                  }}
+                >
+                  {b3Lang('quoteDetail.header.downloadPDF')}
+                </CustomButton>
               </Box>
             </Grid>
           )}
@@ -411,7 +433,6 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
                   maxHeight: '400px',
                   position: 'relative',
                   top: isPrinting ? '1.75rem' : '0',
-                  left: isPrinting ? '-1.25rem' : '0',
                 }}
               />
             </Box>

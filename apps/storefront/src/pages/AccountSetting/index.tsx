@@ -411,7 +411,7 @@ function AccountSetting() {
           </CustomButton>
         </Box>
 
-        {!isBCUser && (
+        {isB2BUser && (
           <Box sx={{ width: '400px' }}>
             <FormControl>
               <FormLabel>Company logo:</FormLabel>

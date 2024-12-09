@@ -603,6 +603,7 @@ function QuoteDetail() {
           companyLogo={companyLogo}
           showRetailQuote={showRetailQuote}
           setShowRetailQuote={setShowRetailQuote}
+          isRequestLoading={isRequestLoading}
           setIsRequestLoading={setIsRequestLoading}
         />
 
@@ -671,7 +672,6 @@ function QuoteDetail() {
           </Grid>
 
           <Grid
-            id="quote-overview"
             item
             xs={isMobile ? 12 : 4}
             rowSpacing={0}
@@ -699,6 +699,18 @@ function QuoteDetail() {
                 showRetailQuote={showRetailQuote}
               />
             </Box>
+
+            {quoteDetail.legalTerms && (
+              <Box
+                id="quote-terms"
+                sx={{
+                  marginBottom: '1rem',
+                  displayPrint: 'none',
+                }}
+              >
+                <QuoteTermsAndConditions quoteTerms={companyTerms} />
+              </Box>
+            )}
 
             {quoteDetail.notes && (
               <Box
@@ -731,7 +743,6 @@ function QuoteDetail() {
 
                 <Box
                   sx={{
-                    marginBottom: '1rem',
                     displayPrint: 'none',
                   }}
                 >
@@ -743,17 +754,6 @@ function QuoteDetail() {
                   />
                 </Box>
               </>
-            )}
-
-            {showRetailQuote && quoteDetail.legalTerms && (
-              <Box
-                id="quote-terms"
-                sx={{
-                  displayPrint: 'none',
-                }}
-              >
-                <QuoteTermsAndConditions quoteTerms={companyTerms} />
-              </Box>
             )}
           </Grid>
         </Grid>
