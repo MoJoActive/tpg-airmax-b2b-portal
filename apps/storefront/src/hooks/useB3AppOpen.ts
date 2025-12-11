@@ -84,6 +84,10 @@ const useB3AppOpen = (initOpenState: OpenPageState) => {
           registerArr.includes(e.target as Element) ||
           allOtherArr.includes(e.target as Element)
         ) {
+          if (role === CustomerRole.B2C && allOtherArr.includes(e.target as Element)) {
+            return false;
+          }
+
           const isSearchNode = handleJudgeSearchNode(e);
           const isCheckoutNormalHref = handleJudgeCheckoutNormalHref(e);
 

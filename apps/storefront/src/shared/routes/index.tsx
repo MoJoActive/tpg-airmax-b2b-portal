@@ -445,7 +445,13 @@ const gotoAllowedAppPage = async (
   const IsRealJuniorBuyer =
     +role === CustomerRole.JUNIOR_BUYER && companyRoleName === 'Junior Buyer';
   const currentRole = !IsRealJuniorBuyer && +role === CustomerRole.JUNIOR_BUYER ? 1 : role;
-  if ((!url && role !== CustomerRole.GUEST && pathname.includes('account.php')) || isAccountEnter) {
+  if (
+    (!url &&
+      role !== CustomerRole.GUEST &&
+      role !== CustomerRole.B2C &&
+      pathname.includes('account.php')) ||
+    isAccountEnter
+  ) {
     let isB2BUser = false;
     if (
       company.customer.userType === UserTypes.MULTIPLE_B2C &&

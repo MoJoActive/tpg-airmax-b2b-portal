@@ -177,8 +177,10 @@ export default function App() {
   }, [registerEnabled]);
 
   useEffect(() => {
-    removeBCMenus();
-  }, []);
+    if (role !== CustomerRole.B2C && role !== CustomerRole.GUEST) {
+      removeBCMenus();
+    }
+  }, [role]);
 
   useEffect(() => {
     storeDispatch(setOpenPageReducer(setOpenPage));

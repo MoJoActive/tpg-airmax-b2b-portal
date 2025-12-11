@@ -8,11 +8,12 @@ const execa = require('execa')
 const WebDAV = require('webdav-fs')
 const { glob } = require('glob')
 
+const isProd = true;
 const config = {
-  WEBDAV_STOREHASH: 'sq95sgetne',
   WEBDAV_USERNAME: 'domains@mojoactive.com',
-  WEBDAV_PASSWORD: 'bae69ee1175f9509fbfa74a5da468681',
-  IS_DEV: argv.dev,
+  WEBDAV_PASSWORD: isProd ? '476de323f122185fc8b11e12f6d28c3c442e1bc2' : 'bae69ee1175f9509fbfa74a5da468681',
+  WEBDAV_STOREHASH: isProd ? 'nldoq9l1qv' : 'sq95sgetne',
+  TEST_MODE: argv.dev,
 }
 
 const WebDAVHelper = {
@@ -129,7 +130,7 @@ const tasks = new Listr([
   {
     title: 'Deploy B2B Portal',
     task: async (ctx, task) => {
-      if (config.IS_DEV) return;
+      if (config.TEST_MODE) return;
 
       return new Promise(async (resolve, reject) => {
         // wait for 1 second
@@ -180,7 +181,7 @@ const finished = () => {
   console.log(`  ${chalk.green('√')} Finished`)
   console.log()
 
-  if (config.IS_DEV) {
+  if (config.TEST_MODE) {
     console.log('\n🎉 Thanks for building!')
     return;
   }
