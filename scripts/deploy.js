@@ -118,7 +118,7 @@ const tasks = new Listr([
     },
   },
   {
-    title: 'Build Checkout',
+    title: 'Build B2B Portal',
     task: (ctx, task) => {
       task.output = 'Building...'
       return execa('npm', ['run', 'build']).catch((reason) => {
@@ -239,17 +239,17 @@ const finished = () => {
 <script
   type="module"
   crossorigin=""
-  src="${absolutePath}/index.${indexFileHash}.js"
+  src="${absolutePath}/index.${indexFileHash}"
 ></script>
 <script
   nomodule=""
   crossorigin=""
-  src="${absolutePath}/polyfills-legacy.${polyfillsFileHash}.js"
+  src="${absolutePath}/polyfills-legacy.${polyfillsFileHash}"
 ></script>
 <script
   nomodule=""
   crossorigin=""
-  src="${absolutePath}/index-legacy.${indexLegacyFileHash}.js"
+  src="${absolutePath}/index-legacy.${indexLegacyFileHash}"
 ></script>`
 
   console.log(`2. Replace the existing script tags with the following:`)

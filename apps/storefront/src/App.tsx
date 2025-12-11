@@ -8,7 +8,6 @@ import { useB3AppOpen, useSetOpen } from '@/hooks';
 import useDomHooks from '@/hooks/dom/useDomHooks';
 import { CustomStyleContext } from '@/shared/customStyleButton';
 import { GlobaledContext } from '@/shared/global';
-import { gotoAllowedAppPage } from '@/shared/routes';
 import { setChannelStoreType } from '@/shared/service/b2b';
 import { CustomerRole } from '@/types';
 import {
@@ -159,17 +158,10 @@ export default function App() {
       }
 
       setOpenPage({
-        isOpen: true,
+        isOpen: false,
         openUrl,
       });
     }
-  };
-
-  const gotoPage = (url: string) => {
-    setOpenPage({
-      isOpen: true,
-      openUrl: url,
-    });
   };
 
   useEffect(() => {
@@ -217,7 +209,7 @@ export default function App() {
 
       // background login enter judgment and refresh
       if (!href.includes('checkout') && !(customerId && !window.location.hash)) {
-        await gotoAllowedAppPage(+userInfo.role, gotoPage);
+        // await gotoAllowedAppPage(+userInfo.role, gotoPage);
       } else {
         showPageMask(false);
       }
