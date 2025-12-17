@@ -29,7 +29,6 @@ export default function B3Nav({ closeSidebar }: B3NavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const b3Lang = useB3Lang();
-  const customerGroupId = useAppSelector(({ company }) => company.customer.customerGroupId);
 
   const { dispatch } = useContext(DynamicallyVariableedContext);
   const role = useAppSelector(({ company }) => company.customer.role);
@@ -116,14 +115,6 @@ export default function B3Nav({ closeSidebar }: B3NavProps) {
     return false;
   };
 
-  let portalPrefix = '';
-
-  if (customerGroupId === 2) {
-    portalPrefix = 'dealer';
-  } else if (customerGroupId === 3) {
-    portalPrefix = 'pro';
-  }
-
   return (
     <List
       id="b2b-nav"
@@ -184,50 +175,46 @@ export default function B3Nav({ closeSidebar }: B3NavProps) {
         );
       })}
 
-      {(customerGroupId === 2 || customerGroupId === 3) && (
-        <>
-          <Divider id="nav-divider" />
+      <Divider id="nav-divider" />
 
-          <ListItem key="marketing-pricing" disablePadding>
-            <ListItemButton
-              onClick={() =>
-                handleClick({
-                  path: `/${portalPrefix}-portal/marketing-pricing/`,
-                  isExternal: true,
-                })
-              }
-            >
-              <ListItemText primary="Marketing & Pricing" />
-            </ListItemButton>
-          </ListItem>
+      <ListItem key="marketing-pricing" disablePadding>
+        <ListItemButton
+          onClick={() =>
+            handleClick({
+              path: `/pro-portal/marketing-pricing/`,
+              isExternal: true,
+            })
+          }
+        >
+          <ListItemText primary="Marketing & Pricing" />
+        </ListItemButton>
+      </ListItem>
 
-          <ListItem key="technical-training" disablePadding>
-            <ListItemButton
-              onClick={() =>
-                handleClick({
-                  path: `/${portalPrefix}-portal/technical-training/`,
-                  isExternal: true,
-                })
-              }
-            >
-              <ListItemText primary="Technical Training" />
-            </ListItemButton>
-          </ListItem>
+      <ListItem key="technical-training" disablePadding>
+        <ListItemButton
+          onClick={() =>
+            handleClick({
+              path: `/pro-portal/technical-training/`,
+              isExternal: true,
+            })
+          }
+        >
+          <ListItemText primary="Technical Training" />
+        </ListItemButton>
+      </ListItem>
 
-          <ListItem key="hires-images" disablePadding>
-            <ListItemButton
-              onClick={() =>
-                handleClick({
-                  path: `/${portalPrefix}-portal/hires-images/`,
-                  isExternal: true,
-                })
-              }
-            >
-              <ListItemText primary="Hi-Res Images" />
-            </ListItemButton>
-          </ListItem>
-        </>
-      )}
+      <ListItem key="hires-images" disablePadding>
+        <ListItemButton
+          onClick={() =>
+            handleClick({
+              path: `/pro-portal/hires-images/`,
+              isExternal: true,
+            })
+          }
+        >
+          <ListItemText primary="Hi-Res Images" />
+        </ListItemButton>
+      </ListItem>
     </List>
   );
 }
