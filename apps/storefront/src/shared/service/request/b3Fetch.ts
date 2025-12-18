@@ -97,6 +97,11 @@ const B3Request = {
       }
 
       if (message) {
+        if (message === 'Signature verification failed') {
+          window.b2b.utils.openPage('SIGN_IN');
+          return new Promise(() => {});
+        }
+
         if (!customMessage) {
           snackbar.error(message);
         }
