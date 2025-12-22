@@ -25,7 +25,7 @@ export const getCurrentCustomerJWT = async (app_client_id: string) => {
  */
 export const customerLoginAPI = (storefrontLoginToken: string) => {
   if (platform !== 'bigcommerce') {
-    return;
+    return Promise.resolve();
   }
-  fetch(`${baseUrl}/login/token/${storefrontLoginToken}`, { method: 'GET' });
+  return fetch(`${baseUrl}/login/token/${storefrontLoginToken}`, { method: 'GET' });
 };

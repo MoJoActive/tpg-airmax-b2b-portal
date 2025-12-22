@@ -266,6 +266,7 @@ export const getCurrentCustomerInfo: (b2bToken?: string) => Promise<
       role: any;
       userType: any;
       companyRoleName: string | any;
+      customerGroupId: number;
     }
   | undefined
 > = async (b2bToken?: string) => {
@@ -291,6 +292,11 @@ export const getCurrentCustomerInfo: (b2bToken?: string) => Promise<
       email: emailAddress = '',
       customerGroupId,
     } = loginCustomer;
+
+    if (customerGroupId !== 10) {
+      clearCurrentCustomerInfo();
+      return undefined;
+    }
 
     const companyUserInfo = await getCompanyUserInfo();
 
@@ -341,6 +347,7 @@ export const getCurrentCustomerInfo: (b2bToken?: string) => Promise<
         role,
         userType,
         companyRoleName,
+        customerGroupId,
       };
     }
   } catch (error) {

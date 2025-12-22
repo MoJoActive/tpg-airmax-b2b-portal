@@ -269,7 +269,7 @@ export default function Login(props: PageProps) {
           } = await b2bLogin({ loginData });
 
           storeDispatch(setB2BToken(token));
-          customerLoginAPI(storefrontLoginToken);
+          await customerLoginAPI(storefrontLoginToken);
 
           const loginInformation = {
             storefrontToken: storefrontLoginToken,
@@ -291,6 +291,15 @@ export default function Login(props: PageProps) {
             getForcePasswordReset(data.emailAddress);
           } else {
             const info = await getCurrentCustomerInfo(token);
+
+            if (!info) {
+              setOpenPage({
+                isOpen: false,
+                openUrl: '',
+              });
+              window.location.href = window.location.pathname + window.location.search;
+              return;
+            }
 
             if (quoteDetailToCheckoutUrl) {
               navigate(quoteDetailToCheckoutUrl);

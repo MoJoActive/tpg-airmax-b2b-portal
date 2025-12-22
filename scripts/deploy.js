@@ -239,17 +239,17 @@ const finished = () => {
 <script
   type="module"
   crossorigin=""
-  src="${absolutePath}/index.${indexFileHash}"
+  src="${absolutePath}/index.${indexFileHash}${isProd ? '.js' : ''}"
 ></script>
 <script
   nomodule=""
   crossorigin=""
-  src="${absolutePath}/polyfills-legacy.${polyfillsFileHash}"
+  src="${absolutePath}/polyfills-legacy.${polyfillsFileHash}${isProd ? '.js' : ''}"
 ></script>
 <script
   nomodule=""
   crossorigin=""
-  src="${absolutePath}/index-legacy.${indexLegacyFileHash}"
+  src="${absolutePath}/index-legacy.${indexLegacyFileHash}${isProd ? '.js' : ''}"
 ></script>`
 
   console.log(`2. Replace the existing script tags with the following:`)
