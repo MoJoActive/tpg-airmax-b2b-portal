@@ -96,8 +96,8 @@ export const getCurrentStoreInfo = (
 
 export const getloginTokenInfo = () => {
   const currentTimestamp = Math.floor(Date.now() / 1000);
-  const oneWeekInSeconds = 7 * 24 * 60 * 60;
-  const expiresTimestamp = currentTimestamp + oneWeekInSeconds;
+  const tokenDurationInSeconds = 30 * 24 * 60 * 60;
+  const expiresTimestamp = currentTimestamp + tokenDurationInSeconds;
   const { origin } = window.location;
   const data = {
     storeHash,
