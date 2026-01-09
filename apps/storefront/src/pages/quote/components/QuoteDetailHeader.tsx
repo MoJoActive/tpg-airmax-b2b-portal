@@ -215,6 +215,8 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
+              position: 'relative',
+              zIndex: 2,
             }}
             onClick={() => {
               navigate('/quotes');
