@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
 import { ArrowBackIosNew } from '@mui/icons-material';
@@ -39,9 +39,26 @@ interface QuoteDetailHeaderProps {
 
 function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
   const iframeDocument = useAppSelector((state) => state.theme.themeFrame);
+  const logoRef = useRef<HTMLImageElement>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isMobile] = useMobile();
   const b3Lang = useB3Lang();
+
+  /*
+  // convert company logo to base64 on page load to ensure it prints
+  const [b64Logo, setB64Logo] = useState('');
+  useEffect(() => {
+    if (!logoRef.current) return;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Could not get canvas context');
+    canvas.width = logoRef.current.naturalWidth;
+    canvas.height = logoRef.current.naturalHeight;
+    ctx.drawImage(logoRef.current, 0, 0);
+    const dataUrl = canvas.toDataURL('image/png');
+    setB64Logo(dataUrl);
+  }, [logoRef.current]);
+  */
 
   const {
     status,
@@ -153,13 +170,15 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
 
       const options = {
         margin: 20,
-        filename: 'quote.pdf',
+        filename: `${isRetail ? 'Customer' : 'Internal'} Quote ${quoteNumber}.pdf`,
         html2canvas: {
           scale: 2,
           useCORS: true,
           logging: true,
           width: pxWidth,
           windowWidth: pxWidth,
+          allowTaint: true,
+          imageTimeout: 5000,
         },
         jsPDF: {
           unit: 'px',
@@ -276,6 +295,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
                 color: b3HexToRgb(customColor, 0.87),
               }}
             >
+              {showRetailQuote ? 'Customer ' : 'Internal '}
               {b3Lang('quoteDetail.header.quoteNumber', {
                 quoteNumber: quoteNumber || '',
               })}
@@ -377,7 +397,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
                       variant="body2"
                       sx={{ display: 'inline', whiteSpace: 'nowrap', userSelect: 'none' }}
                     >
-                      Show retail quote
+                      Show customer quote
                     </Typography>
                   }
                   control={
@@ -404,7 +424,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
                     width: '100%;',
                   }}
                 >
-                  Download B2B PDF
+                  Download Internal PDF
                 </CustomButton>
                 <CustomButton
                   variant="contained"
@@ -420,16 +440,19 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
             </Grid>
           )}
 
-          {showRetailQuote && companyLogo && (
+          {companyLogo && (
             <Box
               sx={{
                 alignSelf: 'flex-end',
                 marginTop: isPrinting ? '0' : '-1rem',
+                opacity: showRetailQuote ? 1 : 0,
               }}
             >
               <img
+                ref={logoRef}
                 src={companyLogo}
                 alt="Company Logo"
+                crossOrigin="anonymous"
                 style={{
                   maxWidth: '400px',
                   maxHeight: '400px',

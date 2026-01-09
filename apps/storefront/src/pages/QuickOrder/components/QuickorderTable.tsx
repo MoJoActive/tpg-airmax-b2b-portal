@@ -483,6 +483,7 @@ function QuickorderTable({
             <B3FilterSearch
               h="48px"
               searchBGColor="rgba(0, 0, 0, 0.06)"
+              placeholder="Search purchased products"
               handleChange={(e) => {
                 handleSearchProduct(e);
               }}

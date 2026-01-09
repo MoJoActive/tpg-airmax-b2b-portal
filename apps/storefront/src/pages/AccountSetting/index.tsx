@@ -29,7 +29,7 @@ import { Fields, ParamProps } from '@/types/accountSetting';
 import { B3SStorage, channelId, snackbar } from '@/utils';
 
 import FileUpload from '../quote/components/FileUpload';
-import { deCodeField, getAccountFormFields } from '../Registered/config';
+import { getAccountFormFields } from '../Registered/config';
 
 import { getAccountSettingFiles } from './config';
 import { b2bSubmitDataProcessing, bcSubmitDataProcessing, initB2BInfo, initBcInfo } from './utils';
@@ -194,8 +194,8 @@ function AccountSetting() {
       setCompanyTerms(terms);
       setValue('companyTerms', terms);
     };
-    if (!isBCUser) getLogoAndTerms();
-  }, [isBCUser, companyId, setValue]);
+    if (isB2BUser) getLogoAndTerms();
+  }, [isB2BUser, companyId, setValue]);
 
   const validateEmailValue = async (emailValue: string) => {
     if (customer.emailAddress === trim(emailValue)) return true;
@@ -242,21 +242,6 @@ function AccountSetting() {
     return true;
   };
 
-  const handleGetUserExtraFields = (data: CustomFieldItems) => {
-    let userExtraFieldsInfo: CustomFieldItems[] = [];
-    const userExtraFields = accountInfoFormFields.filter(
-      (item: CustomFieldItems) => item.custom && item.groupId === 1,
-    );
-    if (userExtraFields.length > 0) {
-      userExtraFieldsInfo = userExtraFields.map((item: CustomFieldItems) => ({
-        fieldName: deCodeField(item?.name || ''),
-        fieldValue: data[item.name],
-      }));
-    }
-
-    return userExtraFieldsInfo;
-  };
-
   const handleAddUserClick = () => {
     handleSubmit(async (data: CustomFieldItems) => {
       setLoadding(true);
@@ -268,23 +253,18 @@ function AccountSetting() {
 
         const passwordFlag = passwordValidation(data);
 
-        let userExtraFields: CustomFieldItems[] = [];
-        if (!isBCUser) {
-          userExtraFields = handleGetUserExtraFields(data);
-
-          if (termsUpdated) {
-            B3Request.put(`/api/v2/companies/${companyId}/basic-info`, RequestType.B2BRest, {
-              extraFields: [
-                {
-                  fieldName: 'Terms & Conditions',
-                  fieldValue: companyTerms,
-                },
-              ],
-            });
-          }
+        if (isB2BUser && termsUpdated) {
+          B3Request.put(`/api/v2/companies/${companyId}/basic-info`, RequestType.B2BRest, {
+            extraFields: [
+              {
+                fieldName: 'Terms & Conditions',
+                fieldValue: companyTerms,
+              },
+            ],
+          });
         }
 
-        const dataProcessingFn = !isBCUser ? b2bSubmitDataProcessing : bcSubmitDataProcessing;
+        const dataProcessingFn = isB2BUser ? b2bSubmitDataProcessing : bcSubmitDataProcessing;
 
         if (isValid && emailFlag && passwordFlag) {
           const { isEdit, param } = dataProcessingFn(
@@ -295,12 +275,11 @@ function AccountSetting() {
           );
 
           if (isEdit) {
-            if (!isBCUser) {
+            if (isB2BUser) {
               param.companyId = companyId;
-              param.extraFields = userExtraFields;
             }
 
-            const requestFn = !isBCUser ? updateB2BAccountSettings : updateBCAccountSettings;
+            const requestFn = isB2BUser ? updateB2BAccountSettings : updateBCAccountSettings;
 
             const newParams: CustomFieldItems = {
               ...param,
@@ -447,7 +426,7 @@ function AccountSetting() {
                 maxFileSize={5242880}
                 acceptedFiles={['image/*']}
                 requestType="companyAttachedFile"
-                tips="Upload an image file up to 5MB"
+                tips="Upload an image, preferably at least 400px height or width (max 5MB file size)"
                 onchange={async (fileObj) => {
                   if (fileObj?.fileUrl) {
                     snackbar.success('Logo uploaded successfully.');
@@ -479,7 +458,6 @@ function AccountSetting() {
                     onBlur={() => {
                       if (!termsUpdated) setTermsUpdated(true);
                       setCompanyTerms(field.value);
-                      setTermsUpdated(true);
                     }}
                     label="Terms & Conditions"
                     multiline

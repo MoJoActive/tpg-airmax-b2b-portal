@@ -203,6 +203,9 @@ export const b2bSubmitDataProcessing = (
   let useExtraFieldsFlag = false;
 
   Object.keys(data).forEach((key: string) => {
+    if (key === 'companyLogo' || key === 'companyTerms') {
+      return;
+    }
     decryptionFields.forEach((item: Partial<Fields>) => {
       if (key === item.name) {
         flag = false;

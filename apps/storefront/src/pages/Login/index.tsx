@@ -95,8 +95,10 @@ export default function Login(props: PageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const {
-    state: { isCheckout, logo, registerEnabled },
+    state: { isCheckout, logo },
   } = useContext(GlobaledContext);
+
+  const registerEnabled = false;
 
   const {
     state: {

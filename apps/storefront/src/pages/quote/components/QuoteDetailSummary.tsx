@@ -329,7 +329,7 @@ export default function QuoteDetailSummary({
 
             {
               // radio buttons for shipping
-              !showRetailQuote && shippingOptions && (
+              !showRetailQuote && shippingOptions?.length && shippingOptions?.length > 0 && (
                 <Grid>
                   <Box id="shipping-options" sx={{ mt: 3 }}>
                     <Typography sx={{ fontWeight: 'bold', fontSize: '.9rem' }}>

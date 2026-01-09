@@ -282,10 +282,14 @@ export const getB2BRegisterCustomFields = () =>
     query: getCompanyExtraFields(),
   });
 
-export const getB2BCountries = () =>
-  B3Request.graphqlB2B({
+export const getB2BCountries = async () => {
+  const { countries } = await B3Request.graphqlB2B({
     query: getCountries(),
   });
+  return {
+    countries: countries.filter((country: any) => country.countryCode === 'US'),
+  };
+};
 
 export const createB2BCompanyUser = (data: CustomFieldItems) =>
   B3Request.graphqlB2B({

@@ -1,4 +1,4 @@
-import { Fragment, ReactNode, useCallback, useContext, useState } from 'react';
+import { Fragment, ReactNode, useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
 import styled from '@emotion/styled';
@@ -6,6 +6,8 @@ import { Box, Card, CardContent, Divider, Typography } from '@mui/material';
 import throttle from 'lodash-es/throttle';
 
 import CustomButton from '@/components/button/CustomButton';
+import OrderStatus from '@/pages/order/components/OrderStatus';
+import { orderStatusCode } from '@/pages/order/shared/getOrderStatus';
 import { GlobaledContext } from '@/shared/global';
 import { isB2BUserSelector, rolePermissionSelector, useAppSelector } from '@/store';
 import {
@@ -214,6 +216,8 @@ function OrderCard(props: OrderCardProps) {
     ));
   }
 
+  const orderStatusLabel = orderStatusCode[parseInt(subtitle, 10)];
+
   return (
     <Card
       sx={{
@@ -226,7 +230,7 @@ function OrderCard(props: OrderCardProps) {
         }}
       >
         <Typography variant="h5">{header}</Typography>
-        {subtitle && <div>{subtitle}</div>}
+        {subtitle && <OrderStatus code={orderStatusLabel} />}
       </Box>
       <CardContent>
         <Box
@@ -303,32 +307,15 @@ export default function OrderAction(props: OrderActionProps) {
 
   const {
     money,
-    orderSummary: { createAt, name, priceData, priceSymbol } = {},
+    orderSummary: { name, priceData, priceSymbol } = {},
     payment: { billingAddress, paymentMethod, dateCreateAt } = {},
     orderComments = '',
     products,
     orderId,
     ipStatus = 0,
     invoiceId,
-    poNumber,
+    statusCode,
   } = detailsData;
-
-  const getPaymentMessage = useCallback(() => {
-    let message = '';
-
-    if (!createAt) return message;
-
-    if (poNumber) {
-      message = b3Lang('orderDetail.paidWithPo', {
-        paidDate: displayFormat(createAt, true),
-      });
-    } else {
-      message = b3Lang('orderDetail.paidInFull', {
-        paidDate: displayFormat(createAt, true),
-      });
-    }
-    return message;
-  }, [poNumber, createAt, b3Lang]);
 
   if (!orderId) {
     return null;
@@ -453,7 +440,7 @@ export default function OrderAction(props: OrderActionProps) {
     {
       header: b3Lang('orderDetail.payment'),
       key: 'payment',
-      subtitle: getPaymentMessage(),
+      subtitle: statusCode as string,
       buttons: [
         {
           value: isB2BUser ? b3Lang('orderDetail.viewInvoice') : b3Lang('orderDetail.printInvoice'),

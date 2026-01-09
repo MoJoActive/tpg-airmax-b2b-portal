@@ -121,7 +121,7 @@ const tasks = new Listr([
     title: 'Build B2B Portal',
     task: (ctx, task) => {
       task.output = 'Building...'
-      return execa('npm', ['run', 'build']).catch((reason) => {
+      return execa('yarn', ['run', 'build']).catch((reason) => {
         task.title = `Build failed`
         throw new Error(reason.message)
       })

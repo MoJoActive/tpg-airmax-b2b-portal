@@ -75,7 +75,6 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module',
     project: true,
-    tsconfigRootDir: '.',
   },
   rules: {
     'prettier/prettier': ['warn'],

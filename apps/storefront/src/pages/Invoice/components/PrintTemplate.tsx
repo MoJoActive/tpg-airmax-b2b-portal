@@ -21,6 +21,9 @@ interface PrintTemplateProps {
   row: RowList;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ResizableBox = Resizable as any;
+
 function PrintTemplate({ row }: PrintTemplateProps) {
   const container = useRef<HTMLInputElement | null>(null);
 
@@ -95,7 +98,7 @@ function PrintTemplate({ row }: PrintTemplateProps) {
           },
         }}
       >
-        <Resizable
+        <ResizableBox
           className="box"
           height={height}
           minConstraints={[dom?.current?.offsetWidth || 0, 0]}
@@ -106,7 +109,7 @@ function PrintTemplate({ row }: PrintTemplateProps) {
           <div style={{ width: '100%', height: `${height}px` }}>
             <div ref={container} style={{ height: '100%', width: '100%' }} />
           </div>
-        </Resizable>
+        </ResizableBox>
       </Box>
     </B3Spin>
   );
