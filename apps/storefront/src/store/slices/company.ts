@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import persistReducer from 'redux-persist/es/persistReducer';
-import storage from 'redux-persist/lib/storage';
+import storageSession from 'redux-persist/lib/storage/session';
 
 import { CompanyInfo, CompanyStatus, Customer, CustomerRole, LoginTypes, UserTypes } from '@/types';
 
@@ -106,4 +106,4 @@ export const {
   setPermissionModules,
 } = companySlice.actions;
 
-export default persistReducer({ key: 'company', storage }, companySlice.reducer);
+export default persistReducer({ key: 'company', storage: storageSession }, companySlice.reducer);
