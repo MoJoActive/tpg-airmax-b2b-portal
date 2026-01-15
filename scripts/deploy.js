@@ -121,7 +121,12 @@ const tasks = new Listr([
     title: 'Build B2B Portal',
     task: (ctx, task) => {
       task.output = 'Building...'
-      return execa('yarn', ['run', 'build']).catch((reason) => {
+      return execa('yarn', ['run', 'build'], {
+        env: {
+          ...process.env,
+          NODE_OPTIONS: '--max-old-space-size=8192',
+        },
+      }).catch((reason) => {
         task.title = `Build failed`
         throw new Error(reason.message)
       })

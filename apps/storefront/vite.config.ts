@@ -1,6 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /// <reference types="vitest" />
-import legacy from '@vitejs/plugin-legacy';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -18,12 +17,7 @@ const assetsAbsolutePath: AssetsAbsolutePathProps = {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
   return {
-    plugins: [
-      legacy({
-        targets: ['defaults'],
-      }),
-      react(),
-    ],
+    plugins: [react()],
     experimental: {
       renderBuiltUrl(
         filename: string,
@@ -93,7 +87,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       minify: true,
-      sourcemap: true,
+      sourcemap: false,
       rollupOptions: {
         input: {
           index: 'src/main.ts',
