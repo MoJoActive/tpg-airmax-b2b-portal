@@ -445,7 +445,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
               sx={{
                 alignSelf: 'flex-end',
                 marginTop: isPrinting ? '0' : '-1rem',
-                opacity: showRetailQuote ? 1 : 0,
+                opacity: 1,
               }}
             >
               <img
@@ -457,7 +457,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
                   maxWidth: '400px',
                   maxHeight: '400px',
                   position: 'relative',
-                  top: isPrinting ? '1.75rem' : '0',
+                  top: isPrinting || isRequestLoading ? '1.75rem' : '0',
                 }}
               />
             </Box>

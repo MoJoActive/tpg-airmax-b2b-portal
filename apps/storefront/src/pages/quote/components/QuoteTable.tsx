@@ -244,7 +244,12 @@ function QuoteTable(props: ShoppingDetailTableProps) {
               alt="Product-img"
               loading="lazy"
             />
-            <Box>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
               <Typography
                 variant="body1"
                 color="#212121"
