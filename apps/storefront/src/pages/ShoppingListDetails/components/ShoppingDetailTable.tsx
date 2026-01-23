@@ -453,12 +453,7 @@ function ShoppingDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>)
               alt="Product-img"
               loading="lazy"
             />
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+            <Box>
               <Typography
                 variant="body1"
                 color="#212121"

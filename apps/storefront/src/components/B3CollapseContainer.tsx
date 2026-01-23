@@ -9,10 +9,18 @@ interface CollapseContainerProps {
   defaultOpen?: boolean;
   children: ReactNode;
   handleOnChange?: (open: boolean) => void;
+  noWrap?: boolean;
 }
 
 export default function B3CollapseContainer(props: CollapseContainerProps) {
-  const { children, title = '', header, defaultOpen = false, handleOnChange } = props;
+  const {
+    children,
+    title = '',
+    header,
+    defaultOpen = false,
+    handleOnChange,
+    noWrap = false,
+  } = props;
 
   const [open, setOpen] = useState(defaultOpen);
 
@@ -40,7 +48,11 @@ export default function B3CollapseContainer(props: CollapseContainerProps) {
           alignItems: 'center',
         }}
       >
-        {header || <Typography variant="h5">{title}</Typography>}
+        {header || (
+          <Typography variant="h5" sx={{ whiteSpace: noWrap ? 'nowrap' : 'normal' }}>
+            {title}
+          </Typography>
+        )}
         {open ? <ExpandLess /> : <ExpandMore />}
       </Box>
       <Collapse in={open} timeout="auto" unmountOnExit>

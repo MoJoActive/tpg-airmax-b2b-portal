@@ -34,6 +34,7 @@ export default function QuoteTermsAndConditions(props: QuoteTermsAndConditionsPr
           title={b3Lang('quoteDetail.termsAndConditions')}
           handleOnChange={handleOnChange}
           defaultOpen
+          noWrap
         >
           <Box>
             <Typography

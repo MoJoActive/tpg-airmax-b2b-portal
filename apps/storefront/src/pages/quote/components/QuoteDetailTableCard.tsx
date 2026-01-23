@@ -86,6 +86,8 @@ function QuoteDetailTableCard(props: QuoteTableCardProps) {
         </Box>
         <Box
           sx={{
+            display: 'flex',
+            flexDirection: 'column',
             flex: 1,
           }}
         >
