@@ -81,6 +81,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
     const computed = window.getComputedStyle(sourceElement);
 
     Array.from(computed).forEach((style: string) => {
+      if (['height', 'min-height', 'max-height'].includes(style)) return;
       try {
         // @ts-expect-error CSS style assignment
         el.style[style as keyof CSSStyleDeclaration] = computed.getPropertyValue(style);
@@ -167,6 +168,18 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
     try {
       applyComputedStyles(elementToExport, clonedElement);
       setShowRetailQuote(shouldShowRetailQuote);
+
+      const productInfoContainers = clonedElement.querySelectorAll('.product-info-container');
+      productInfoContainers.forEach((container) => {
+        const el = container as HTMLElement;
+        el.style.display = 'block';
+        el.style.height = 'auto';
+        Array.from(el.children).forEach((child) => {
+          const childEl = child as HTMLElement;
+          childEl.style.height = 'auto';
+          childEl.style.marginBottom = '0.25rem';
+        });
+      });
 
       const options = {
         margin: 20,

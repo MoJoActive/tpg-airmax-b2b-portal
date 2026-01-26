@@ -171,7 +171,7 @@ function QuoteDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
               alt="Product-img"
               loading="lazy"
             />
-            <Box>
+            <div className="product-info-container">
               <Typography
                 variant="body1"
                 color="#212121"
@@ -225,7 +225,7 @@ function QuoteDetailTable(props: ShoppingDetailTableProps, ref: Ref<unknown>) {
                   {row.notes}
                 </Typography>
               )}
-            </Box>
+            </div>
           </Box>
         );
       },
