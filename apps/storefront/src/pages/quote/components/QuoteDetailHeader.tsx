@@ -453,7 +453,7 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
             </Grid>
           )}
 
-          {companyLogo && (
+          {(!showRetailQuote || companyLogo) && (
             <Box
               sx={{
                 alignSelf: 'flex-end',
@@ -463,14 +463,18 @@ function QuoteDetailHeader(props: QuoteDetailHeaderProps) {
             >
               <img
                 ref={logoRef}
-                src={companyLogo}
-                alt="Company Logo"
+                src={
+                  !showRetailQuote
+                    ? 'https://cdn11.bigcommerce.com/s-nldoq9l1qv/product_images/airmax_logo_1699558154__21980.png'
+                    : companyLogo
+                }
+                alt={!showRetailQuote ? 'Airmax Logo' : 'Company Logo'}
                 crossOrigin="anonymous"
                 style={{
-                  maxWidth: '400px',
+                  maxWidth: !showRetailQuote ? '350px' : '400px',
                   maxHeight: '400px',
                   position: 'relative',
-                  top: isPrinting || isRequestLoading ? '1.75rem' : '0',
+                  top: isPrinting || isRequestLoading || !showRetailQuote ? '2rem' : '0',
                 }}
               />
             </Box>
