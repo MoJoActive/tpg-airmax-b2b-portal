@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, /* useMemo, */ useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
 import { Box, Button, Grid } from '@mui/material';
@@ -21,7 +21,7 @@ import { getCompanyExtraFields } from '@/shared/service/b2b/api/company';
 import {
   activeCurrencyInfoSelector,
   isB2BUserSelector,
-  // rolePermissionSelector,
+  rolePermissionSelector,
   TaxZoneRates,
   useAppSelector,
 } from '@/store';
@@ -33,7 +33,7 @@ import { getSearchVal } from '@/utils/loginInfo';
 
 import Message from '../quote/components/Message';
 import QuoteAttachment from '../quote/components/QuoteAttachment';
-// import QuoteDetailFooter from '../quote/components/QuoteDetailFooter';
+import QuoteDetailFooter from '../quote/components/QuoteDetailFooter';
 import QuoteDetailHeader from '../quote/components/QuoteDetailHeader';
 import QuoteDetailSummary from '../quote/components/QuoteDetailSummary';
 import QuoteDetailTable from '../quote/components/QuoteDetailTable';
@@ -48,7 +48,7 @@ function QuoteDetail() {
   const navigate = useNavigate();
 
   const {
-    state: { bcLanguage /* quoteConfig */ },
+    state: { bcLanguage, quoteConfig },
   } = useContext(GlobaledContext);
 
   const isB2BUser = useAppSelector(isB2BUserSelector);
@@ -57,10 +57,9 @@ function QuoteDetail() {
   const customerGroupId = useAppSelector(({ company }) => company.customer.customerGroupId);
   const role = useAppSelector(({ company }) => company.customer.role);
 
-  // const isAgenting = useAppSelector(({ b2bFeatures }) => b2bFeatures.masqueradeCompany.isAgenting);
+  const isAgenting = useAppSelector(({ b2bFeatures }) => b2bFeatures.masqueradeCompany.isAgenting);
   const [isMobile] = useMobile();
 
-  /*
   const {
     quoteConvertToOrderPermission: quoteConvertToOrderPermissionRename,
     purchasabilityPermission,
@@ -70,7 +69,6 @@ function QuoteDetail() {
     ? quoteConvertToOrderPermissionRename
     : +role !== 2;
   const quotePurchasabilityPermission = isB2BUser ? purchasabilityPermission : +role !== 2;
-  */
 
   const b3Lang = useB3Lang();
 
@@ -99,7 +97,7 @@ function QuoteDetail() {
   });
 
   const [isRequestLoading, setIsRequestLoading] = useState(false);
-  // const [isShowFooter, setIsShowFooter] = useState(false);
+  const [isShowFooter, setIsShowFooter] = useState(false);
   const [quoteDetailTax, setQuoteDetailTax] = useState(0);
   const [noBuyerProductName, setNoBuyerProductName] = useState({
     oos: '',
@@ -252,7 +250,7 @@ function QuoteDetail() {
 
   const getQuoteDetail = async () => {
     setIsRequestLoading(true);
-    // setIsShowFooter(false);
+    setIsShowFooter(false);
 
     try {
       const { search } = location;
@@ -384,7 +382,7 @@ function QuoteDetail() {
       throw err;
     } finally {
       setIsRequestLoading(false);
-      // setIsShowFooter(true);
+      setIsShowFooter(true);
     }
   };
 
@@ -548,7 +546,6 @@ function QuoteDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, location, proceedingCheckoutFn]);
 
-  /*
   const isAutoEnableQuoteCheckout = useMemo(() => {
     const isAutoEnable =
       quoteConfig.find((item) => item.key === 'quote_auto_quoting')?.value === '1';
@@ -568,7 +565,6 @@ function QuoteDetail() {
 
     return true;
   };
-  */
 
   useScrollBar(false);
 
@@ -761,7 +757,7 @@ function QuoteDetail() {
           </Grid>
         </Grid>
 
-        {/* quoteConvertToOrderPermission &&
+        {quoteConvertToOrderPermission &&
           quotePurchasabilityPermission &&
           +quoteDetail.status !== 4 &&
           isShowFooter &&
@@ -775,7 +771,7 @@ function QuoteDetail() {
               status={quoteDetail.status}
               proceedingCheckoutFn={proceedingCheckoutFn}
             />
-          ) */}
+          )}
       </Box>
     </B3Spin>
   );
