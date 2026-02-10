@@ -6,13 +6,10 @@ import path from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, loadEnv } from 'vite';
 
-interface AssetsAbsolutePathProps {
-  [key: string]: string;
-}
-
-const assetsAbsolutePath: AssetsAbsolutePathProps = {
-  staging: 'https://cdn.bundleb2b.net/b2b/staging/storefront/assets/',
-  production: 'https://cdn.bundleb2b.net/b2b/production/storefront/assets/',
+const proxyTargets: Record<string, string> = {
+  local: 'http://localhost:8080/',
+  sandbox: 'https://store-sq95sgetne.mybigcommerce.com/',
+  production: 'https://store-nldoq9l1qv.mybigcommerce.com/',
 };
 
 export default defineConfig(({ mode }) => {
@@ -33,13 +30,9 @@ export default defineConfig(({ mode }) => {
           type: 'public' | 'asset';
         },
       ) {
-        const isCustom = env.VITE_ASSETS_ABSOLUTE_PATH !== undefined;
-
-        if (type === 'asset') {
+        if (type === 'asset' && env.VITE_ASSETS_ABSOLUTE_PATH) {
           const name = filename.split('assets/')[1];
-          return isCustom
-            ? `${env.VITE_ASSETS_ABSOLUTE_PATH}${name}`
-            : `${assetsAbsolutePath[mode]}${name}`;
+          return `${env.VITE_ASSETS_ABSOLUTE_PATH}${name}`;
         }
 
         return undefined;
@@ -49,8 +42,7 @@ export default defineConfig(({ mode }) => {
       port: 3001,
       proxy: {
         '/bigcommerce': {
-          target:
-            env?.VITE_PROXY_SHOPPING_URL || 'https://msfremote-frontend-demo.mybigcommerce.com/',
+          target: proxyTargets[env.VITE_ENVIRONMENT || 'local'],
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/bigcommerce/, ''),
         },
@@ -59,7 +51,7 @@ export default defineConfig(({ mode }) => {
     test: {
       env: {
         VITE_B2B_URL: 'https://api-b2b.bigcommerce.com',
-        VITE_LOCAL_DEBUG: 'TRUE',
+        VITE_ENVIRONMENT: 'local',
       },
       clearMocks: true,
       mockReset: true,
@@ -103,7 +95,7 @@ export default defineConfig(({ mode }) => {
           entryFileNames(info) {
             const { name } = info;
             if (name.includes('headless')) return '[name].js';
-            if (env.VITE_PRODUCTION === 'TRUE') return '[name].[hash].js';
+            if (env.VITE_ENVIRONMENT !== 'local') return '[name].[hash].js';
             return '[name].js';
           },
           manualChunks: {

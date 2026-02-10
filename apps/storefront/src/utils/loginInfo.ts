@@ -30,8 +30,7 @@ import { CompanyStatus, CustomerRole, LoginTypes, UserTypes } from '@/types';
 import b2bLogger from './b3Logger';
 import { B3LStorage, B3SStorage } from './b3Storage';
 import { channelId, storeHash } from './basicConfig';
-
-const { VITE_B2B_CLIENT_ID, VITE_LOCAL_DEBUG } = import.meta.env;
+import { isLocal, storeConfig } from './environment';
 
 interface ChannelIdProps {
   channelId: number;
@@ -57,7 +56,7 @@ export const getCurrentStoreInfo = (
 
   let store;
 
-  if (VITE_LOCAL_DEBUG) {
+  if (isLocal) {
     store = {
       channelId: 1,
       urls: [],
@@ -234,7 +233,7 @@ const loginWithCurrentCustomerJWT = async () => {
   const prevCurrentCustomerJWT = store.getState().company.tokens.currentCustomerJWT;
   let currentCustomerJWT;
   try {
-    currentCustomerJWT = await getCurrentCustomerJWT(VITE_B2B_CLIENT_ID);
+    currentCustomerJWT = await getCurrentCustomerJWT(storeConfig.b2bClientId);
   } catch (error) {
     b2bLogger.error(error);
     return undefined;
@@ -293,7 +292,8 @@ export const getCurrentCustomerInfo: (b2bToken?: string) => Promise<
       customerGroupId,
     } = loginCustomer;
 
-    if (customerGroupId !== 10) {
+    // Regular Pros customer group
+    if (!storeConfig.prosCustomerGroupIds.includes(customerGroupId)) {
       clearCurrentCustomerInfo();
       return undefined;
     }

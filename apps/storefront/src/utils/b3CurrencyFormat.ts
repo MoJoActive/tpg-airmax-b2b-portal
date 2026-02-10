@@ -2,6 +2,7 @@ import { store } from '@/store';
 
 import b2bLogger from './b3Logger';
 import { getActiveCurrencyInfo, getDefaultCurrencyInfo } from './currencyUtils';
+import { isLocal } from './environment';
 
 interface MoneyFormat {
   currency_location: 'left' | 'right';
@@ -13,10 +14,7 @@ interface MoneyFormat {
 }
 
 export const currencyFormatInfo = () => {
-  const currentCurrency =
-    import.meta.env.VITE_LOCAL_DEBUG === 'TRUE'
-      ? getDefaultCurrencyInfo()
-      : getActiveCurrencyInfo();
+  const currentCurrency = isLocal ? getDefaultCurrencyInfo() : getActiveCurrencyInfo();
 
   return {
     currency_location: currentCurrency.token_location || 'left',
