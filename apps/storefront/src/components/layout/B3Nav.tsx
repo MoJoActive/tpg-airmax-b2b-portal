@@ -56,7 +56,7 @@ export default function B3Nav({ closeSidebar }: B3NavProps) {
 
   const handleClick = (item: { configKey?: string; path: string; isExternal?: boolean }) => {
     if (item.isExternal) {
-      window.location.href = window.location.origin + item.path;
+      window.open(window.location.origin + item.path, '_blank');
       return;
     }
 
