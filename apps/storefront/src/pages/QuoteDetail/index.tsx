@@ -27,7 +27,7 @@ import {
 } from '@/store';
 import { Currency } from '@/types';
 import { snackbar } from '@/utils';
-import { getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
+import { getBCPrice, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
 import { conversionProductsList } from '@/utils/b3Product/shared/config';
 import { getSearchVal } from '@/utils/loginInfo';
 
@@ -266,11 +266,42 @@ function QuoteDetail() {
       const { quote } = await fn(data);
       const productsWithMoreInfo = await handleGetProductsById(quote.productsList);
 
+      // derive summary values from line items so they align with table pricing
+      let originalSubtotal = 0;
+      let discountedSubtotal = 0;
+      let taxPrice = 0;
+
+      productsWithMoreInfo?.forEach((product) => {
+        const {
+          quantity,
+          basePrice,
+          offeredPrice,
+          productsSearch: { variants = [], taxClassId },
+        } = product;
+
+        const taxRate = getTaxRate(taxClassId, variants);
+        const unitBaseTax = enteredInclusiveTax
+          ? (+basePrice * taxRate) / (1 + taxRate)
+          : +basePrice * taxRate;
+        const unitOfferedTax = enteredInclusiveTax
+          ? (+offeredPrice * taxRate) / (1 + taxRate)
+          : +offeredPrice * taxRate;
+
+        const baseUnitPrice = getBCPrice(+basePrice, unitBaseTax);
+        const offeredUnitPrice = getBCPrice(+offeredPrice, unitOfferedTax);
+
+        originalSubtotal += baseUnitPrice * +quantity;
+        discountedSubtotal += offeredUnitPrice * +quantity;
+        taxPrice += unitOfferedTax * +quantity;
+      });
+
+      const discountAmount = originalSubtotal - discountedSubtotal;
+
       setQuoteDetail(quote);
       setQuoteSummary({
-        originalSubtotal: quote.subtotal,
-        discount: quote.discount,
-        tax: quote.taxTotal,
+        originalSubtotal,
+        discount: discountAmount,
+        tax: taxPrice,
         shipping: quote.shippingTotal,
         totalAmount: quote.totalAmount,
       });
@@ -319,25 +350,8 @@ function QuoteDetail() {
         totalAmount: retailTotal.toString(),
       });
 
-      if (+quote.shippingTotal === 0) {
-        setQuoteDetailTax(+quote.taxTotal);
-      } else {
-        let taxPrice = 0;
-        productsWithMoreInfo?.forEach((product) => {
-          const {
-            quantity,
-            offeredPrice,
-            productsSearch: { variants = [], taxClassId },
-          } = product;
-
-          const taxRate = getTaxRate(taxClassId, variants);
-          taxPrice += enteredInclusiveTax
-            ? ((+offeredPrice * taxRate) / (1 + taxRate)) * +quantity
-            : +offeredPrice * taxRate * +quantity;
-        });
-
-        setQuoteDetailTax(taxPrice);
-      }
+      // use the same derived tax for both the summary and the quote detail tax display
+      setQuoteDetailTax(taxPrice);
 
       const {
         backendAttachFiles = [],
