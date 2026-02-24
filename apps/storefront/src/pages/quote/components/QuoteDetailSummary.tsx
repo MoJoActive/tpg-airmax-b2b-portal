@@ -381,7 +381,6 @@ export default function QuoteDetailSummary({
                 {showPrice(
                   priceFormat(
                     +totalAmount +
-                      +tax +
                       (shippingOptions?.find((opt) => opt.id === selectedShippingOption)?.cost ??
                         0),
                   ),

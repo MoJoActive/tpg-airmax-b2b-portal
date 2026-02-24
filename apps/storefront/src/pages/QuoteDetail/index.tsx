@@ -266,36 +266,46 @@ function QuoteDetail() {
       const { quote } = await fn(data);
       const productsWithMoreInfo = await handleGetProductsById(quote.productsList);
 
+      // start from backend summary values
+      let originalSubtotal = +quote.subtotal;
+      let discountAmount = +quote.discount;
+      let taxPrice = +quote.taxTotal;
+
+      // when tax is reported as 0 (imported quote with tax baked into prices),
       // derive summary values from line items so they align with table pricing
-      let originalSubtotal = 0;
-      let discountedSubtotal = 0;
-      let taxPrice = 0;
+      if (+quote.taxTotal === 0 && productsWithMoreInfo?.length) {
+        let derivedOriginalSubtotal = 0;
+        let derivedDiscountedSubtotal = 0;
+        let derivedTaxPrice = 0;
 
-      productsWithMoreInfo?.forEach((product) => {
-        const {
-          quantity,
-          basePrice,
-          offeredPrice,
-          productsSearch: { variants = [], taxClassId },
-        } = product;
+        productsWithMoreInfo.forEach((product) => {
+          const {
+            quantity,
+            basePrice,
+            offeredPrice,
+            productsSearch: { variants = [], taxClassId },
+          } = product;
 
-        const taxRate = getTaxRate(taxClassId, variants);
-        const unitBaseTax = enteredInclusiveTax
-          ? (+basePrice * taxRate) / (1 + taxRate)
-          : +basePrice * taxRate;
-        const unitOfferedTax = enteredInclusiveTax
-          ? (+offeredPrice * taxRate) / (1 + taxRate)
-          : +offeredPrice * taxRate;
+          const taxRate = getTaxRate(taxClassId, variants);
+          const unitBaseTax = enteredInclusiveTax
+            ? (+basePrice * taxRate) / (1 + taxRate)
+            : +basePrice * taxRate;
+          const unitOfferedTax = enteredInclusiveTax
+            ? (+offeredPrice * taxRate) / (1 + taxRate)
+            : +offeredPrice * taxRate;
 
-        const baseUnitPrice = getBCPrice(+basePrice, unitBaseTax);
-        const offeredUnitPrice = getBCPrice(+offeredPrice, unitOfferedTax);
+          const baseUnitPrice = getBCPrice(+basePrice, unitBaseTax);
+          const offeredUnitPrice = getBCPrice(+offeredPrice, unitOfferedTax);
 
-        originalSubtotal += baseUnitPrice * +quantity;
-        discountedSubtotal += offeredUnitPrice * +quantity;
-        taxPrice += unitOfferedTax * +quantity;
-      });
+          derivedOriginalSubtotal += baseUnitPrice * +quantity;
+          derivedDiscountedSubtotal += offeredUnitPrice * +quantity;
+          derivedTaxPrice += unitOfferedTax * +quantity;
+        });
 
-      const discountAmount = originalSubtotal - discountedSubtotal;
+        originalSubtotal = derivedOriginalSubtotal;
+        discountAmount = derivedOriginalSubtotal - derivedDiscountedSubtotal;
+        taxPrice = derivedTaxPrice;
+      }
 
       setQuoteDetail(quote);
       setQuoteSummary({
@@ -350,8 +360,30 @@ function QuoteDetail() {
         totalAmount: retailTotal.toString(),
       });
 
-      // use the same derived tax for both the summary and the quote detail tax display
-      setQuoteDetailTax(taxPrice);
+      // keep quote detail tax in sync:
+      // - for imported quotes (taxTotal === 0) use the derived tax from line items
+      // - otherwise, fall back to the original behavior
+      if (+quote.taxTotal === 0) {
+        setQuoteDetailTax(taxPrice);
+      } else if (+quote.shippingTotal === 0) {
+        setQuoteDetailTax(+quote.taxTotal);
+      } else {
+        let lineItemTax = 0;
+        productsWithMoreInfo?.forEach((product) => {
+          const {
+            quantity,
+            offeredPrice,
+            productsSearch: { variants = [], taxClassId },
+          } = product;
+
+          const taxRate = getTaxRate(taxClassId, variants);
+          lineItemTax += enteredInclusiveTax
+            ? ((+offeredPrice * taxRate) / (1 + taxRate)) * +quantity
+            : +offeredPrice * taxRate * +quantity;
+        });
+
+        setQuoteDetailTax(lineItemTax);
+      }
 
       const {
         backendAttachFiles = [],
