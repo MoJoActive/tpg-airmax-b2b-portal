@@ -440,7 +440,7 @@ export const conversionProductsList = (products: Product[], listProduct: ListIte
 
     return {
       ...product,
-      quantity: 1,
+      quantity: product.orderQuantityMinimum || 1,
       base_price: `${price}`,
       optionsV3,
       options: product.options || [],

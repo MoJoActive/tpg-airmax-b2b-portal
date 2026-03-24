@@ -182,6 +182,9 @@ function QuickorderTable({
           });
 
           node.productsSearch = productInfo || {};
+          if (productInfo) {
+            node.quantity = productInfo.quantity;
+          }
         });
 
         return listProducts;
