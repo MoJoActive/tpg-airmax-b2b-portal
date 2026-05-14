@@ -1,6 +1,52 @@
-const { VITE_B2B_URL } = import.meta.env;
+import { Environment, EnvSpecificConfig } from '@/types';
 
-const B2B_BASIC_URL = VITE_B2B_URL;
+const { VITE_B2B_URL, VITE_B2B_CLIENT_ID, VITE_IS_LOCAL_ENVIRONMENT } = import.meta.env;
+
+const ENVIRONMENT_B2B_API_URL: EnvSpecificConfig<string> = {
+  local: VITE_B2B_URL ?? 'http://localhost:9000',
+  integration: 'https://api-b2b.integration.zone',
+  staging: 'https://api-b2b.staging.zone',
+  production: 'https://api-b2b.bigcommerce.com',
+};
+
+const ENVIRONMENT_B2B_APP_CLIENT_ID: EnvSpecificConfig<string> = {
+  local: VITE_B2B_CLIENT_ID ?? 'qxvapwlk4fbb9dyogdcxk9o50d9jqjo',
+  integration: 'leg40ozqqvl0r08spvs0viatax4egbz',
+  staging: 't2tu7i9ap01r4o7cpocngz3xose8dvp',
+  production: 'qxvapwlk4fbb9dyogdcxk9o50d9jqjo',
+};
+
+const DEFAULT_ENVIRONMENT =
+  VITE_IS_LOCAL_ENVIRONMENT === 'TRUE' ? Environment.Local : Environment.Production;
+
+function isEnvironment(value?: string): value is Environment {
+  if (!value) {
+    return false;
+  }
+
+  return Object.values<string>(Environment).includes(value);
+}
+
+const getEnvironment = (environment?: Environment): Environment => {
+  if (environment) {
+    return environment;
+  }
+
+  const b3Environment = (window as any).B3?.setting?.environment;
+  if (isEnvironment(b3Environment)) {
+    return b3Environment;
+  }
+
+  return DEFAULT_ENVIRONMENT;
+};
+
+export function getAPIBaseURL(environment?: Environment) {
+  return ENVIRONMENT_B2B_API_URL[getEnvironment(environment)];
+}
+
+export function getAppClientId(environment?: Environment) {
+  return ENVIRONMENT_B2B_APP_CLIENT_ID[getEnvironment(environment)];
+}
 
 enum RequestType {
   B2BGraphql = 'B2BGraphql',
@@ -22,4 +68,4 @@ const queryParse = <T>(query: T): string => {
   return queryText.slice(0, -1);
 };
 
-export { B2B_BASIC_URL, queryParse, RequestType };
+export { queryParse, RequestType };

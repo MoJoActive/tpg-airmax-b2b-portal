@@ -2,6 +2,15 @@ export interface SimpleObject {
   [k: string]: string | number | undefined | null;
 }
 
+export enum Environment {
+  Local = 'local',
+  Integration = 'integration',
+  Staging = 'staging',
+  Production = 'production',
+}
+
+export type EnvSpecificConfig<T> = Record<Environment, T>;
+
 export interface Address {
   city: string;
   company: string;

@@ -8,7 +8,8 @@ import { store } from '@/store';
 import { CompanyStatus, CustomerRole, UserTypes } from '@/types';
 import { checkEveryPermissionsCode, getB3PermissionsList, getPermissionsInfo } from '@/utils';
 import b2bLogger from '@/utils/b3Logger';
-import { isB2bTokenPage, logoutSession } from '@/utils/b3logout';
+import { isB2bTokenPage } from '@/utils/b3logout';
+import { logoutSession } from '@/utils/b3LogoutSession';
 
 const AccountSetting = lazy(() => import('@/pages/AccountSetting'));
 const AddressList = lazy(() => import('@/pages/Address'));

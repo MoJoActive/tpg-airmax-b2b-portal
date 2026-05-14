@@ -1,12 +1,7 @@
-import { customerExists } from '@/shared/service/bc';
-import { store } from '@/store';
-import { clearCompanySlice } from '@/store/slices/company';
+import { customerExists } from '@/shared/service/bc/graphql/user';
 
 import b2bLogger from './b3Logger';
-
-export const logoutSession = () => {
-  store.dispatch(clearCompanySlice());
-};
+import { logoutSession } from './b3LogoutSession';
 
 export const isB2bTokenPage = (gotoUrl?: string) => {
   const noB2bTokenPages = ['quoteDraft', 'quoteDetail', 'register', 'login', 'forgotpassword'];

@@ -1,7 +1,7 @@
-import validateAddressExtraFields from './api/address';
-import { setChannelStoreType, uploadB2BFile } from './api/global';
-import { validateBCCompanyExtraFields, validateBCCompanyUserExtraFields } from './api/register';
-import {
+export { default as validateAddressExtraFields } from './api/address';
+export { setChannelStoreType, uploadB2BFile } from './api/global';
+export { validateBCCompanyExtraFields, validateBCCompanyUserExtraFields } from './api/register';
+export {
   createB2BAddress,
   createBcAddress,
   deleteB2BAddress,
@@ -13,24 +13,29 @@ import {
   updateB2BAddress,
   updateBcAddress,
 } from './graphql/address';
-import {
+export {
+  endUserMasqueradingCompany,
   getAgentInfo,
   getB2BToken,
   getBcCurrencies,
   getCompanyCreditConfig,
+  getCompanySubsidiaries,
   getCurrencies,
   getProductPricing,
   getStorefrontConfig,
   getStorefrontConfigs,
   getStorefrontDefaultLanguages,
   getTaxZoneRates,
+  getStoreConfigsSwitchStatus,
   getUserCompany,
+  getUserMasqueradingCompany,
+  startUserMasqueradingCompany,
   superAdminBeginMasquerade,
   superAdminCompanies,
   superAdminEndMasquerade,
 } from './graphql/global';
-import { getBCGraphqlToken } from './graphql/login';
-import {
+export { getBCGraphqlToken } from './graphql/login';
+export {
   getB2BAllOrders,
   getB2BOrderDetails,
   getBCAllOrders,
@@ -39,7 +44,7 @@ import {
   getOrdersCreatedByUser,
   getOrderStatusType,
 } from './graphql/orders';
-import {
+export {
   B2BProductsBulkUploadCSV,
   BcProductsBulkUploadCSV,
   getB2BSkusInfo,
@@ -49,7 +54,7 @@ import {
   searchB2BProducts,
   searchBcProducts,
 } from './graphql/product';
-import {
+export {
   b2bQuoteCheckout,
   bcQuoteCheckout,
   createBCQuote,
@@ -69,7 +74,7 @@ import {
   updateB2BQuote,
   updateBCQuote,
 } from './graphql/quote';
-import {
+export {
   createB2BCompanyUser,
   createBCCompanyUser,
   getB2BAccountFormFields,
@@ -83,12 +88,12 @@ import {
   sendSubscribersState,
   storeB2BBasicInfo,
 } from './graphql/register';
-import {
+export {
   getB2BCompanyRoleAndPermissionsDetails,
   getB2BPermissions,
   getB2BRoleList,
 } from './graphql/roleAndPermissions';
-import {
+export {
   addProductToBcShoppingList,
   addProductToShoppingList,
   createB2BShoppingList,
@@ -110,7 +115,7 @@ import {
   updateBcShoppingList,
   updateBcShoppingListsItem,
 } from './graphql/shoppingList';
-import {
+export {
   addOrUpdateUsers,
   checkUserBCEmail,
   checkUserEmail,
@@ -136,112 +141,5 @@ export {
   invoiceDownloadPDF,
 } from './graphql/invoice';
 export { getBcOrderedProducts, getOrderedProducts } from './graphql/quickorder';
-
-export {
-  addOrUpdateUsers,
-  addProductToBcShoppingList,
-  addProductToShoppingList,
-  B2BProductsBulkUploadCSV,
-  b2bQuoteCheckout,
-  BcProductsBulkUploadCSV,
-  bcQuoteCheckout,
-  checkUserBCEmail,
-  checkUserEmail,
-  createB2BAddress,
-  createB2BCompanyUser,
-  createB2BShoppingList,
-  createBcAddress,
-  createBCCompanyUser,
-  createBCQuote,
-  createBcShoppingList,
-  createQuote,
-  deleteB2BAddress,
-  deleteB2BShoppingList,
-  deleteB2BShoppingListItem,
-  deleteBCCustomerAddress,
-  deleteBcShoppingList,
-  deleteBcShoppingListItem,
-  deleteUsers,
-  duplicateB2BShoppingList,
-  duplicateBcShoppingList,
-  exportB2BQuotePdf,
-  exportBcQuotePdf,
-  getAgentInfo,
-  getB2BAccountFormFields,
-  getB2BAddress,
-  getB2BAddressConfig,
-  getB2BAddressExtraFields,
-  getBCStorefrontProductSettings,
-  getB2BAllOrders,
-  getB2BCompanyUserInfo,
-  getB2BCountries,
-  getB2BCustomerAddresses,
-  getB2BJuniorPlaceOrder,
-  getB2BLoginPageConfig,
-  getB2BOrderDetails,
-  getB2BQuoteDetail,
-  getB2BQuotesList,
-  getB2BRegisterCustomFields,
-  getB2BRegisterLogo,
-  getB2BShoppingList,
-  getB2BShoppingListDetails,
-  getB2BSkusInfo,
-  getB2BToken,
-  getB2BCompanyRoleAndPermissionsDetails,
-  getB2BPermissions,
-  getB2BRoleList,
-  getB2BVariantInfoBySkus,
-  getBCAllOrders,
-  getBcCurrencies,
-  getBCCustomerAddress,
-  getBCCustomerAddresses,
-  getBCForcePasswordReset,
-  getBCGraphqlToken,
-  getBCOrderDetails,
-  getBcOrderStatusType,
-  getBcQuoteDetail,
-  getBCQuotesList,
-  getBcShoppingList,
-  getBcShoppingListDetails,
-  getBCStoreChannelId,
-  getBcVariantInfoBySkus,
-  getCompanyCreditConfig,
-  getCurrencies,
-  getOrdersCreatedByUser,
-  getOrderStatusType,
-  getQuoteCreatedByUsers,
-  getShoppingListsCreatedByUser,
-  getStorefrontConfig,
-  getStorefrontConfigs,
-  getStorefrontDefaultLanguages,
-  getTaxZoneRates,
-  getUserCompany,
-  getUsers,
-  getUsersExtraFieldsInfo,
-  getProductPricing,
-  guestProductsBulkUploadCSV,
-  quoteDetailAttachFileCreate,
-  quoteDetailAttachFileDelete,
-  searchB2BProducts,
-  searchBcProducts,
-  sendSubscribersState,
-  setChannelStoreType,
-  storeB2BBasicInfo,
-  superAdminBeginMasquerade,
-  superAdminCompanies,
-  superAdminEndMasquerade,
-  updateB2BAddress,
-  updateB2BQuote,
-  updateB2BShoppingList,
-  updateB2BShoppingListsItem,
-  updateBcAddress,
-  updateBCQuote,
-  updateBcShoppingList,
-  updateBcShoppingListsItem,
-  uploadB2BFile,
-  validateAddressExtraFields,
-  validateBCCompanyExtraFields,
-  validateBCCompanyUserExtraFields,
-};
 
 export { default as getTranslation } from './api/translation';

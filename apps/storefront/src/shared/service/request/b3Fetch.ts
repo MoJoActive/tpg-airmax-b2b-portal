@@ -1,23 +1,25 @@
 import Cookies from 'js-cookie';
 
 import { store } from '@/store';
-import { baseUrl, channelId, snackbar, storeHash } from '@/utils';
+import { logoutSession } from '@/utils/b3LogoutSession';
+import { snackbar } from '@/utils/b3Tip';
+import { BigCommerceStorefrontAPIBaseURL, channelId, storeHash } from '@/utils/basicConfig';
 
-import { B2B_BASIC_URL, queryParse, RequestType, RequestTypeKeys } from './base';
+import { getAPIBaseURL, queryParse, RequestType, RequestTypeKeys } from './base';
 import b3Fetch from './fetch';
 
 const GraphqlEndpointsFn = (type: RequestTypeKeys): string => {
   const GraphqlEndpoints: CustomFieldStringItems = {
-    B2BGraphql: `${B2B_BASIC_URL}/graphql`,
-    BCGraphql: `${baseUrl}/graphql`,
-    BCProxyGraphql: `${B2B_BASIC_URL}/api/v3/proxy/bc-storefront/graphql`,
+    B2BGraphql: `${getAPIBaseURL()}/graphql`,
+    BCGraphql: `${BigCommerceStorefrontAPIBaseURL}/graphql`,
+    BCProxyGraphql: `${getAPIBaseURL()}/api/v3/proxy/bc-storefront/graphql`,
   };
 
   return GraphqlEndpoints[type] || '';
 };
 
 function request(path: string, config?: RequestInit, type?: RequestTypeKeys) {
-  const url = RequestType.B2BRest === type ? `${B2B_BASIC_URL}${path}` : path;
+  const url = RequestType.B2BRest === type ? `${getAPIBaseURL()}${path}` : path;
   const { B2BToken } = store.getState().company.tokens;
   const getToken: HeadersInit =
     type === RequestType.BCRest
@@ -25,7 +27,7 @@ function request(path: string, config?: RequestInit, type?: RequestTypeKeys) {
           'x-xsrf-token': Cookies.get('XSRF-TOKEN') ?? '',
         }
       : {
-          authToken: `${B2BToken}`,
+          authToken: B2BToken,
         };
 
   const {
@@ -58,21 +60,43 @@ function graphqlRequest<T, Y>(type: RequestTypeKeys, data: T, config?: Y) {
   return b3Fetch(url, init);
 }
 
+export type ProductValidationError = {
+  itemId: string;
+  productId: number;
+  variantId: number;
+  responseType: string;
+  code: string;
+  productName?: string;
+};
+
 interface B2bGQLResponse {
   data: any;
   errors?: Array<{
     message: string;
     extensions: {
       code: number;
+      productValidationErrors: ProductValidationError[];
     };
   }>;
+}
+
+interface GQLRequest {
+  query: string;
+  variables?: any;
+}
+
+interface DataWrapper {
+  data: unknown;
 }
 
 const B3Request = {
   /**
    * Request to B2B graphql API using B2B token
    */
-  graphqlB2B: function post<T>(data: T, customMessage = false): Promise<any> {
+  graphqlB2B: function post<T extends DataWrapper | CustomFieldItems = CustomFieldItems>(
+    data: GQLRequest,
+    customMessage = false,
+  ): Promise<T extends DataWrapper ? T['data'] : T> {
     const { B2BToken } = store.getState().company.tokens;
     const config = {
       Authorization: `Bearer  ${B2BToken}`,
@@ -85,15 +109,22 @@ const B3Request = {
       const extensions = error?.extensions;
 
       if (extensions?.code === 40101) {
+        window.sessionStorage.clear();
+        logoutSession();
+
         if (window.location.hash.startsWith('#/')) {
-          window.location.href = '#/login?loginFlag=3&showTip=false';
+          window.location.href = '#/login?loginFlag=loggedOutLogin&showTip=false';
         }
 
         if (message) {
           snackbar.error(message);
         }
 
-        return new Promise(() => {});
+        return Promise.reject(message);
+      }
+
+      if (extensions && extensions?.productValidationErrors) {
+        return { ...value.data, error };
       }
 
       if (message) {
@@ -113,10 +144,9 @@ const B3Request = {
     });
   },
   /**
-   * @deprecated use {@link B3Request.graphqlBCProxy} instead
-   * Request to BC graphql API using BC graphql token
+   * Request used in stencil store to call bigcommerce graphql storefront api
    */
-  graphqlBC: function post<T>(data: T): Promise<any> {
+  graphqlBC: function post<T = any>(data: GQLRequest): Promise<T> {
     const { bcGraphqlToken } = store.getState().company.tokens;
     const config = {
       Authorization: `Bearer  ${bcGraphqlToken}`,
@@ -124,22 +154,19 @@ const B3Request = {
     return graphqlRequest(RequestType.BCGraphql, data, config);
   },
   /**
-   * Request to BC graphql API using B2B token
+   * Request used in headless context to talk to the bigcommerce graphql storefront api via proxy
    */
-  graphqlBCProxy: function post<T>(data: T): Promise<any> {
-    let config = {};
+  graphqlBCProxy: function post<T = any>(data: GQLRequest): Promise<T> {
     const { B2BToken } = store.getState().company.tokens;
 
-    if (B2BToken) {
-      config = {
-        Authorization: `Bearer  ${B2BToken}`,
-      };
-    } else {
-      config = {
-        'Store-Hash': storeHash,
-        'BC-Channel-Id': channelId,
-      };
-    }
+    const config = B2BToken
+      ? {
+          Authorization: `Bearer  ${B2BToken}`,
+        }
+      : {
+          'Store-Hash': storeHash,
+          'BC-Channel-Id': channelId,
+        };
 
     return graphqlRequest(RequestType.BCProxyGraphql, data, config);
   },
@@ -199,7 +226,7 @@ const B3Request = {
     formData: T,
     config?: Y,
   ): Promise<any> {
-    return request(`${B2B_BASIC_URL}${url}`, {
+    return request(`${getAPIBaseURL()}${url}`, {
       method: 'POST',
       body: formData,
       headers: {},
@@ -208,4 +235,7 @@ const B3Request = {
   },
 };
 
+type B3RequestType = typeof B3Request;
 export default B3Request;
+
+export type { B3RequestType };

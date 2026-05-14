@@ -36,11 +36,20 @@ export enum CompanyStatus {
   DEFAULT = 99,
 }
 
+export enum CustomerRoleName {
+  ADMIN_NAME = 'Admin',
+  SENIOR_BUYER_NAME = 'Senior Buyer',
+  JUNIOR_BUYER_NAME = 'Junior Buyer',
+}
+
+/** CUSTOM_ROLE(role === 2 && roleName !== 'Junior Buyer') * */
 export enum CustomerRole {
   ADMIN = 0,
   SENIOR_BUYER = 1,
   JUNIOR_BUYER = 2,
   SUPER_ADMIN = 3,
+  SUPER_ADMIN_BEFORE_AGENCY = 4,
+  CUSTOM_ROLE = 5,
   B2C = 99,
   GUEST = 100,
 }
@@ -60,6 +69,27 @@ export enum LoginTypes {
   WAITING_LOGIN = 0,
   FIRST_LOGIN = 1,
   GENERAL_LOGIN = 2,
+}
+
+export interface CompanyHierarchyListProps {
+  companyId: number;
+  companyName: string;
+  parentCompanyName?: string;
+  parentCompanyId?: number | null;
+  channelFlag: boolean;
+}
+
+export interface CompanyHierarchyInfoProps {
+  isEnabledCompanyHierarchy: boolean;
+  isHasCurrentPagePermission: boolean;
+  selectCompanyHierarchyId: string | number;
+  companyHierarchyList: CompanyHierarchyListProps[];
+  companyHierarchyAllList: CompanyHierarchyListProps[];
+  companyHierarchySelectSubsidiariesList: CompanyHierarchyListProps[];
+}
+
+export interface CompanyHierarchyProps extends CompanyHierarchyListProps {
+  children?: CompanyHierarchyProps[];
 }
 
 export enum FeatureEnabled {

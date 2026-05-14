@@ -1,5 +1,6 @@
 import { ReactNode, useContext, useLayoutEffect } from 'react';
 
+import { Z_INDEX } from '@/constants';
 import { GlobaledContext } from '@/shared/global';
 import { getBCStoreChannelId } from '@/shared/service/b2b';
 import { getGlobalTranslations, setStoreInfo, setTimeFormat, useAppDispatch } from '@/store';
@@ -10,22 +11,14 @@ interface B3StoreContainerProps {
   children: ReactNode;
 }
 
-export interface StoreItem {
-  channelId: number;
-  urls: Array<string>;
-  b2bEnabled: boolean;
-  channelLogo: string;
-  isEnabled: boolean;
-  b3ChannelId: number;
-  type: string;
-  platform: string;
-  translationVersion: number;
-}
+type ZIndexType = keyof typeof Z_INDEX;
 
-export interface StoreBasicInfo {
-  storeSites?: Array<StoreItem> | [];
-  storeName: string;
-}
+const setZIndexVariables = () => {
+  Object.keys(Z_INDEX).forEach((key) => {
+    const zIndexKey = key as ZIndexType;
+    document.documentElement.style.setProperty(`--z-index-${key}`, Z_INDEX[zIndexKey].toString());
+  });
+};
 
 export default function B3StoreContainer(props: B3StoreContainerProps) {
   const showPageMask = usePageMask();
@@ -38,6 +31,13 @@ export default function B3StoreContainer(props: B3StoreContainerProps) {
 
   useLayoutEffect(() => {
     const getStoreBasicInfo = async () => {
+      if (
+        window.location.pathname.includes('account.php') ||
+        (window.location.hash && window.location.hash !== '#/')
+      ) {
+        showPageMask(true);
+      }
+
       try {
         const { storeBasicInfo }: CustomFieldItems = await getBCStoreChannelId();
         const [storeInfo] = storeBasicInfo.storeSites;
@@ -82,6 +82,7 @@ export default function B3StoreContainer(props: B3StoreContainerProps) {
         showPageMask(false);
       }
     };
+    setZIndexVariables();
     getStoreBasicInfo();
     // disabling because dispatchers are not supposed to be here
     // eslint-disable-next-line react-hooks/exhaustive-deps

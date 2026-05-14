@@ -1,11 +1,26 @@
+import { CompanyHierarchyListProps, LoginTypes } from '@/types';
+import { storeHash } from '@/utils/basicConfig';
+import { mapToCompanyError } from '@/utils/companyUtils';
 import {
   convertArrayToGraphql,
   convertObjectOrArrayKeysToCamel,
   convertObjectOrArrayKeysToSnake,
-  storeHash,
-} from '@/utils';
+} from '@/utils/graphqlDataConvert';
 
 import B3Request from '../../request/b3Fetch';
+
+interface B2BTokenResponse {
+  authorization: {
+    result: {
+      token: string;
+      loginType: LoginTypes;
+      permissions: {
+        code: string;
+        permissionLevel: number;
+      }[];
+    };
+  };
+}
 
 interface ProductPriceOption {
   option_id: number;
@@ -24,6 +39,19 @@ interface ProductPrice {
   currency_code: string;
   items: Partial<ProductPriceItem>[];
   customer_group_id: number;
+}
+
+interface CompanySubsidiariesProps {
+  companySubsidiaries: CompanyHierarchyListProps[];
+}
+
+interface ConfigsSwitchStatusProps {
+  isEnabled: string;
+  key: string;
+}
+
+interface ConfigsSwitchStatus {
+  storeConfigSwitchStatus: ConfigsSwitchStatusProps;
 }
 
 const getB2BTokenQl = (currentCustomerJWT: string, channelId: number) => `mutation {
@@ -311,10 +339,51 @@ const priceProducts = `query priceProducts($storeHash: String, $channelId: Int, 
 }
 `;
 
+const companySubsidiaries = `query CompanySubsidiaries {
+	companySubsidiaries {
+		companyId
+		companyName
+		parentCompanyId
+		parentCompanyName
+		channelFlag
+	}
+}`;
+
+const userMasqueradingCompanyBegin = `mutation userMasqueradingCompanyBegin($companyId: Int!) {
+	userMasqueradingCompanyBegin(companyId: $companyId) {
+		userMasqueradingCompanyBegin{
+			companyId
+			companyName
+			bcId
+		}
+	}
+}`;
+
+const userMasqueradingCompanyEnd = `mutation userMasqueradingCompanyEnd {
+	userMasqueradingCompanyEnd {
+		message
+	}
+}`;
+
+const userMasqueradingCompany = `query {
+	userMasqueradingCompany {
+		companyId
+		companyName
+		bcId
+	}
+}`;
+
+const storeConfigSwitchStatus = `query storeConfigSwitchStatus($key: String!){
+	storeConfigSwitchStatus(key: $key) {
+		isEnabled
+		key
+	}
+}`;
+
 export const getB2BToken = (currentCustomerJWT: string, channelId = 1) =>
-  B3Request.graphqlB2B({
+  B3Request.graphqlB2B<B2BTokenResponse>({
     query: getB2BTokenQl(currentCustomerJWT, channelId),
-  });
+  }).catch(mapToCompanyError);
 
 export const getAgentInfo = (customerId: string | number) =>
   B3Request.graphqlB2B({
@@ -384,4 +453,34 @@ export const getProductPricing = (data: Partial<ProductPrice>) =>
     return {
       data: convertObjectOrArrayKeysToSnake(b2bPriceProducts) as CustomFieldItems[],
     };
+  });
+
+export const getCompanySubsidiaries = (): Promise<CompanySubsidiariesProps> =>
+  B3Request.graphqlB2B({
+    query: companySubsidiaries,
+  });
+
+export const startUserMasqueradingCompany = (companyId: number) =>
+  B3Request.graphqlB2B(
+    {
+      query: userMasqueradingCompanyBegin,
+      variables: { companyId },
+    },
+    true,
+  ).catch(mapToCompanyError);
+
+export const endUserMasqueradingCompany = () =>
+  B3Request.graphqlB2B({
+    query: userMasqueradingCompanyEnd,
+  });
+
+export const getUserMasqueradingCompany = () =>
+  B3Request.graphqlB2B({
+    query: userMasqueradingCompany,
+  });
+
+export const getStoreConfigsSwitchStatus = (key: string): Promise<ConfigsSwitchStatus> =>
+  B3Request.graphqlB2B({
+    query: storeConfigSwitchStatus,
+    variables: { key },
   });

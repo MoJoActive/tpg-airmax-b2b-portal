@@ -30,6 +30,8 @@ declare interface Window {
       platform: ChannelPlatform;
       b2b_url: string;
       captcha_setkey: string;
+      environment?: import('@/types').Environment;
+      disable_logout_button?: boolean;
     };
   };
   /**

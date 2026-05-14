@@ -23,7 +23,7 @@ import {
   setTaxZoneRates,
 } from '@/store/slices/global';
 import { setActiveCurrency, setCurrencies } from '@/store/slices/storeConfigs';
-import { B3SStorage, channelId } from '@/utils';
+import { B3SStorage, channelId, getStoreConfigsSwitchStatus } from '@/utils';
 
 interface StoreforntKeysProps {
   key: string;
@@ -160,6 +160,14 @@ const storeforntKeys: StoreforntKeysProps[] = [
     name: 'quoteSubmissionResponse',
   },
 ];
+
+export const getAccountHierarchyIsEnabled = async () => {
+  const { storeConfigSwitchStatus } = await getStoreConfigsSwitchStatus('account_hierarchy');
+  if (!storeConfigSwitchStatus) return false;
+  const { isEnabled } = storeConfigSwitchStatus;
+
+  return isEnabled === '1';
+};
 
 const getTemPlateConfig = async (dispatch: any, dispatchGlobal: any) => {
   const keys = storeforntKeys.map((item: StoreforntKeysProps) => item.key);

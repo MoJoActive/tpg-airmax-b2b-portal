@@ -3,7 +3,15 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import persistReducer from 'redux-persist/es/persistReducer';
 import storageSession from 'redux-persist/lib/storage/session';
 
-import { CompanyInfo, CompanyStatus, Customer, CustomerRole, LoginTypes, UserTypes } from '@/types';
+import {
+  CompanyHierarchyListProps,
+  CompanyInfo,
+  CompanyStatus,
+  Customer,
+  CustomerRole,
+  LoginTypes,
+  UserTypes,
+} from '@/types';
 
 interface Tokens {
   B2BToken: string;
@@ -16,11 +24,17 @@ interface PermissionsCodesProps {
   permissionLevel: number;
 }
 
+export interface CompanyHierarchyInfoModules {
+  isEnabledCompanyHierarchy: boolean;
+  companyHierarchyAllList: CompanyHierarchyListProps[];
+}
+
 export interface CompanyState {
   companyInfo: CompanyInfo;
   customer: Customer;
   tokens: Tokens;
   permissions: PermissionsCodesProps[];
+  companyHierarchyInfo: CompanyHierarchyInfoModules;
 }
 
 const initialState: CompanyState = {
@@ -48,6 +62,10 @@ const initialState: CompanyState = {
     currentCustomerJWT: '',
   },
   permissions: [],
+  companyHierarchyInfo: {
+    isEnabledCompanyHierarchy: false,
+    companyHierarchyAllList: [],
+  },
 };
 
 const companySlice = createSlice({
@@ -76,7 +94,7 @@ const companySlice = createSlice({
     setB2BToken: (state, { payload }: PayloadAction<string>) => {
       state.tokens.B2BToken = payload;
     },
-    setbcGraphqlToken: (state, { payload }: PayloadAction<string>) => {
+    setBcGraphQLToken: (state, { payload }: PayloadAction<string>) => {
       state.tokens.bcGraphqlToken = payload;
     },
     setCurrentCustomerJWT: (state, { payload }: PayloadAction<string>) => {
@@ -87,6 +105,12 @@ const companySlice = createSlice({
     },
     setPermissionModules: (state, { payload }: PayloadAction<PermissionsCodesProps[]>) => {
       state.permissions = payload;
+    },
+    setCompanyHierarchyInfoModules: (
+      state,
+      { payload }: PayloadAction<CompanyHierarchyInfoModules>,
+    ) => {
+      state.companyHierarchyInfo = payload;
     },
   },
 });
@@ -100,10 +124,11 @@ export const {
   clearCustomer,
   setTokens,
   setB2BToken,
-  setbcGraphqlToken,
+  setBcGraphQLToken,
   setCurrentCustomerJWT,
   setLoginType,
   setPermissionModules,
+  setCompanyHierarchyInfoModules,
 } = companySlice.actions;
 
 export default persistReducer({ key: 'company', storage: storageSession }, companySlice.reducer);

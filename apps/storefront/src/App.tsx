@@ -8,19 +8,23 @@ import { useB3AppOpen, useSetOpen } from '@/hooks';
 import useDomHooks from '@/hooks/dom/useDomHooks';
 import { CustomStyleContext } from '@/shared/customStyleButton';
 import { GlobaledContext } from '@/shared/global';
+import { gotoAllowedAppPage } from '@/shared/routes';
 import { setChannelStoreType } from '@/shared/service/b2b';
 import { CustomerRole } from '@/types';
 import {
   getQuoteEnabled,
   handleHideRegisterPage,
   hideStorefrontElement,
+  logoutSession,
   openPageByClick,
   removeBCMenus,
 } from '@/utils';
 
+import b2bVerifyBcLoginStatus from './utils/b2bVerifyBcLoginStatus';
 import clearInvoiceCart from './utils/b3ClearCart';
 import b2bLogger from './utils/b3Logger';
 import { isUserGotoLogin } from './utils/b3logout';
+import { isCompanyError } from './utils/companyUtils';
 import { getCompanyInfo, getCurrentCustomerInfo, loginInfo } from './utils/loginInfo';
 import {
   getStoreTaxZoneRates,
@@ -33,6 +37,7 @@ import {
   rolePermissionSelector,
   setGlabolCommonState,
   setOpenPageReducer,
+  store,
   useAppDispatch,
   useAppSelector,
 } from './store';
@@ -174,55 +179,86 @@ export default function App() {
     }
   }, [role]);
 
+  const gotoPage = (url: string) => {
+    setOpenPage({
+      isOpen: true,
+      openUrl: url,
+    });
+  };
+
   useEffect(() => {
     storeDispatch(setOpenPageReducer(setOpenPage));
     loginAndRegister();
     const init = async () => {
-      // bc graphql token
-      if (!bcGraphqlToken) {
-        await loginInfo();
-      }
-      setChannelStoreType();
-
       try {
+        // Verify BC session is still valid when we have a rehydrated customerId.
+        // Handles forced logouts (e.g., user logged in from another browser causing
+        // BC to invalidate this session and redirect to the login page).
+        if (customerId) {
+          const isBcLogin = await b2bVerifyBcLoginStatus();
+          if (!isBcLogin) {
+            logoutSession();
+            showPageMask(false);
+            return;
+          }
+
+          const { customerGroupId } = store.getState().company.customer;
+          if (customerGroupId !== 10) {
+            logoutSession();
+            showPageMask(false);
+            return;
+          }
+        }
+
+        // bc graphql token
+        if (!bcGraphqlToken) {
+          await loginInfo();
+        }
+        setChannelStoreType();
+
         await Promise.allSettled([
           getStoreTaxZoneRates(),
           setStorefrontConfig(dispatch),
           getTemPlateConfig(styleDispatch, dispatch),
           getCompanyInfo(role, b2bId),
         ]);
+
+        const userInfo = {
+          role: Number(role),
+          isAgenting,
+        };
+
+        if (!customerId) {
+          const info = await getCurrentCustomerInfo().catch((error) => {
+            if (isCompanyError(error)) {
+              gotoPage(`/login?loginFlag=${error.reason}`);
+            }
+          });
+          if (info) {
+            userInfo.role = info?.role;
+          }
+        }
+
+        // background login enter judgment and refresh
+        if (!pathname.includes('checkout') && !(customerId && !window.location.hash)) {
+          await gotoAllowedAppPage(Number(userInfo.role), gotoPage);
+        } else {
+          showPageMask(false);
+        }
+
+        if (customerId) {
+          clearInvoiceCart();
+        }
+
+        storeDispatch(
+          setGlabolCommonState({
+            isPageComplete: true,
+          }),
+        );
       } catch (e) {
         b2bLogger.error(e);
-      }
-
-      const userInfo = {
-        role: +role,
-        isAgenting,
-      };
-
-      if (!customerId) {
-        const info = await getCurrentCustomerInfo();
-        if (info) {
-          userInfo.role = info?.role;
-        }
-      }
-
-      // background login enter judgment and refresh
-      if (!href.includes('checkout') && !(customerId && !window.location.hash)) {
-        // await gotoAllowedAppPage(+userInfo.role, gotoPage);
-      } else {
         showPageMask(false);
       }
-
-      if (customerId) {
-        clearInvoiceCart();
-      }
-
-      storeDispatch(
-        setGlabolCommonState({
-          isPageComplete: true,
-        }),
-      );
     };
 
     init();

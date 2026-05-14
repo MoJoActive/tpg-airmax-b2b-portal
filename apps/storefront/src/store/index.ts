@@ -6,6 +6,7 @@ export * from './slices/theme';
 export * from './slices/b2bFeatures';
 export * from './slices/quoteInfo';
 export * from './slices/storeInfo';
+export * from './slices/company';
 
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector, useStore } from 'react-redux';

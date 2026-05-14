@@ -1,4 +1,4 @@
-import { convertArrayToGraphql, convertObjectToGraphql } from '@/utils';
+import { convertArrayToGraphql, convertObjectToGraphql } from '@/utils/graphqlDataConvert';
 
 import B3Request from '../../request/b3Fetch';
 

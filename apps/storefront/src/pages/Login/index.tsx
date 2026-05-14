@@ -24,7 +24,7 @@ import { setB2BToken } from '@/store/slices/company';
 import { CustomerRole, UserTypes } from '@/types';
 import { channelId, getB3PermissionsList, loginJump, snackbar, storeHash } from '@/utils';
 import b2bLogger from '@/utils/b3Logger';
-import { logoutSession } from '@/utils/b3logout';
+import { logoutSession } from '@/utils/b3LogoutSession';
 import { deleteCartData } from '@/utils/cartUtils';
 import { getCurrentCustomerInfo } from '@/utils/loginInfo';
 

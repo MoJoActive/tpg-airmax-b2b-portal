@@ -1,3 +1,5 @@
+import { getStoreConfigsSwitchStatus } from '@/shared/service/b2b/graphql/global';
+
 import { checkPermissionCode } from './b3CheckPermissions/base';
 import {
   checkEveryPermissionsCode,
@@ -40,6 +42,7 @@ import { validatorRules } from './validatorRules';
 export * from './basicConfig';
 
 export { loginJump } from './b3Login';
+export { logoutSession } from './b3LogoutSession';
 
 // TODO: Clean this up
 export { default as hideStorefrontElement } from './b3HideStorefrontElement';
@@ -66,6 +69,7 @@ export {
   getDefaultCurrencyInfo,
   getLineNumber,
   getLogo,
+  getStoreConfigsSwitchStatus,
   getProductPriceIncTax,
   getQuoteEnabled,
   getTextLenPX,
