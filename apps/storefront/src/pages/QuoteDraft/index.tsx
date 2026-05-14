@@ -161,6 +161,7 @@ function QuoteDraft({ setOpenPage }: PageProps) {
   const [quoteSubmissionResponseOpen, setQuoteSubmissionResponseOpen] = useState<boolean>(false);
   const [quoteId, setQuoteId] = useState<string | number>('');
   const [currentCreatedAt, setCurrentCreatedAt] = useState<string | number>('');
+  const [currentUuid, setCurrentUuid] = useState<string>('');
 
   const quoteSummaryRef = useRef<QuoteSummaryRef | null>(null);
 
@@ -353,13 +354,15 @@ function QuoteDraft({ setOpenPage }: PageProps) {
   const handleAfterSubmit = (
     inpQuoteId?: string | number,
     inpCurrentCreatedAt?: string | number,
+    inpUuid?: string,
   ) => {
     const currentQuoteId = inpQuoteId || quoteId;
     const createdAt = inpCurrentCreatedAt || currentCreatedAt;
+    const uuid = inpUuid || currentUuid;
 
     if (currentQuoteId) {
       handleReset();
-      navigate(`/quoteDetail/${currentQuoteId}?date=${createdAt}`, {
+      navigate(`/quoteDetail/${currentQuoteId}?date=${createdAt}${uuid ? `&uuid=${uuid}` : ''}`, {
         state: {
           to: 'draft',
         },
@@ -533,12 +536,13 @@ function QuoteDraft({ setOpenPage }: PageProps) {
 
         const {
           quoteCreate: {
-            quote: { id, createdAt },
+            quote: { id, createdAt, uuid },
           },
         } = await fn(data);
 
         setQuoteId(id);
         setCurrentCreatedAt(createdAt);
+        setCurrentUuid(uuid);
 
         if (id) {
           const cartId = B3LStorage.get('cartToQuoteId');
@@ -548,7 +552,7 @@ function QuoteDraft({ setOpenPage }: PageProps) {
         }
 
         if (quoteSubmissionResponseInfo.value === '0') {
-          handleAfterSubmit(id, createdAt);
+          handleAfterSubmit(id, createdAt, uuid);
         } else {
           setQuoteSubmissionResponseOpen(true);
         }

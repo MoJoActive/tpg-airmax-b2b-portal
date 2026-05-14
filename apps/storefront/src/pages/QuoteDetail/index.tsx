@@ -208,7 +208,7 @@ function QuoteDetail() {
   };
 
   const handleGetProductsById = async (listProducts: ProductInfoProps[]) => {
-    if (listProducts.length > 0) {
+    if (listProducts && listProducts.length > 0) {
       const productIds: number[] = [];
 
       listProducts.forEach((item) => {
@@ -256,14 +256,21 @@ function QuoteDetail() {
       const { search } = location;
 
       const date = getSearchVal(search, 'date') || '';
+      const uuidFromQuery = getSearchVal(search, 'uuid') || '';
       const data = {
         id: +id,
         date: date.toString(),
+        uuid: uuidFromQuery ? uuidFromQuery.toString() : undefined,
       };
 
       const fn = +role === 99 ? getBcQuoteDetail : getB2BQuoteDetail;
 
       const { quote } = await fn(data);
+
+      if (!quote) {
+        snackbar.error('Unable to load this quote.');
+        return undefined;
+      }
       const productsWithMoreInfo = await handleGetProductsById(quote.productsList);
 
       // start from backend summary values
@@ -340,7 +347,7 @@ function QuoteDetail() {
         );
 
         if (retailProduct) {
-          const selectedVariant = retailProduct.variants.find(
+          const selectedVariant = retailProduct.variants?.find(
             (v: any) => v.variant_id === parseInt(product.variantId, 10),
           );
 
@@ -401,7 +408,7 @@ function QuoteDetail() {
           fileType: file.fileType,
           fileUrl: file.fileUrl,
           id: file.id,
-          hasDelete: quoteDetail.status !== 4,
+          hasDelete: quote.status !== 4,
           title: b3Lang('quoteDetail.uploadedByCustomer', {
             createdBy: file.createdBy,
           }),
@@ -576,6 +583,7 @@ function QuoteDetail() {
       setQuoteCheckoutLoadding(true);
       await handleQuoteCheckout({
         quoteId: id,
+        quoteUuid: getSearchVal(location.search, 'uuid') || quoteDetail.uuid,
         proceedingCheckoutFn,
         role,
         location,
@@ -613,6 +621,11 @@ function QuoteDetail() {
   };
 
   useScrollBar(false);
+
+  useEffect(() => {
+    getQuoteDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const [companyLogo, setCompanyLogo] = useState('');
   const [companyTerms, setCompanyTerms] = useState('');
@@ -812,6 +825,7 @@ function QuoteDetail() {
           isEnableProductShowCheckout() && (
             <QuoteDetailFooter
               quoteId={quoteDetail.id}
+              quoteUuid={quoteDetail.uuid}
               role={role}
               isAgenting={isAgenting}
               status={quoteDetail.status}

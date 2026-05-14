@@ -16,6 +16,7 @@ interface QuoteCheckout {
   proceedingCheckoutFn: () => boolean;
   location: Location;
   quoteId: string;
+  quoteUuid?: string;
   navigate?: NavigateFunction;
 }
 
@@ -24,6 +25,7 @@ export const handleQuoteCheckout = async ({
   proceedingCheckoutFn,
   location,
   quoteId,
+  quoteUuid,
   navigate,
 }: QuoteCheckout) => {
   try {
@@ -48,6 +50,7 @@ export const handleQuoteCheckout = async ({
 
     const res = await fn({
       id: +quoteId,
+      uuid: quoteUuid,
     });
 
     setQuoteToStorage(quoteId, date);

@@ -9,6 +9,7 @@ import { handleQuoteCheckout } from '../utils/quoteCheckout';
 
 interface QuoteDetailFooterProps {
   quoteId: string;
+  quoteUuid?: string;
   role: string | number;
   isAgenting: boolean;
   status: number;
@@ -16,7 +17,7 @@ interface QuoteDetailFooterProps {
 }
 
 function QuoteDetailFooter(props: QuoteDetailFooterProps) {
-  const { quoteId, role, isAgenting, status, proceedingCheckoutFn } = props;
+  const { quoteId, quoteUuid, role, isAgenting, status, proceedingCheckoutFn } = props;
   const [isMobile] = useMobile();
   const b3Lang = useB3Lang();
   const location = useLocation();
@@ -56,6 +57,7 @@ function QuoteDetailFooter(props: QuoteDetailFooterProps) {
             role,
             location,
             quoteId,
+            quoteUuid,
             navigate,
           });
         }}

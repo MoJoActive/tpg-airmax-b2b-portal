@@ -205,11 +205,13 @@ function QuotesList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const goToDetail = (item: ListItem, status: number) => {
+  const goToDetail = (item: any, status: number) => {
     if (+status === 0) {
       navigate('/quoteDraft');
     } else {
-      navigate(`/quoteDetail/${item.id}?date=${item.createdAt}`);
+      navigate(
+        `/quoteDetail/${item.id}?date=${item.createdAt}${item.uuid ? `&uuid=${item.uuid}` : ''}`,
+      );
     }
   };
 
