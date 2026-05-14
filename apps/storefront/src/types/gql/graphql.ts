@@ -3005,6 +3005,8 @@ export type ProductInputType = {
   discount: Scalars['Decimal']['input'];
   /** Product image URL */
   imageUrl: Scalars['String']['input'];
+  /** Stable client id for this quote line (required by quoteCreate) */
+  itemId: Scalars['String']['input'];
   /** The discounted price must be passed on */
   offeredPrice: Scalars['Decimal']['input'];
   /** Options of the product */

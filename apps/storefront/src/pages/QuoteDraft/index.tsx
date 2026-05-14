@@ -5,6 +5,7 @@ import { useB3Lang } from '@b3/lang';
 import { ArrowBackIosNew } from '@mui/icons-material';
 import { Box, Checkbox, FormControlLabel, Stack, Typography } from '@mui/material';
 import cloneDeep from 'lodash-es/cloneDeep';
+import { v4 as generateUuid } from 'uuid';
 
 import CustomButton from '@/components/button/CustomButton';
 import { getContrastColor } from '@/components/outSideComponents/utils/b3CustomStyles';
@@ -485,6 +486,7 @@ function QuoteDraft({ setOpenPage }: PageProps) {
             imageUrl: node.primaryImage,
             productName: node.productName,
             options: optionsList,
+            itemId: generateUuid(),
           };
 
           return items;
