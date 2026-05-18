@@ -34,8 +34,8 @@ import {
 import { AddressItemType, BCAddressItemType } from '@/types/address';
 import { BillingAddress, ContactInfoKeys, ShippingAddress } from '@/types/quotes';
 import { B3LStorage, channelId, snackbar, storeHash } from '@/utils';
-import { addQuoteDraftProducts, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
 import b2bLogger from '@/utils/b3Logger';
+import { addQuoteDraftProducts, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
 import { deleteCartData } from '@/utils/cartUtils';
 import validateObject from '@/utils/quoteUtils';
 
