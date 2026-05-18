@@ -13,7 +13,9 @@ import {
   exportB2BQuotePdf,
   exportBcQuotePdf,
   getB2BQuoteDetail,
+  getB2BQuotesList,
   getBcQuoteDetail,
+  getBCQuotesList,
   searchB2BProducts,
   searchBcProducts,
 } from '@/shared/service/b2b';
@@ -257,10 +259,45 @@ function QuoteDetail() {
 
       const date = getSearchVal(search, 'date') || '';
       const uuidFromQuery = getSearchVal(search, 'uuid') || '';
+
+      let resolvedUuid = uuidFromQuery ? uuidFromQuery.toString() : '';
+
+      // BigCommerce enforces a non-null uuid on the quote and quoteCheckout
+      // GraphQL operations (effective May 3, 2026). For bookmarked URLs or
+      // legacy deep links that omit ?uuid=, recover it from the quotes list.
+      if (!resolvedUuid) {
+        try {
+          const listFn = +role === 99 ? getBCQuotesList : getB2BQuotesList;
+          const list = await listFn({
+            first: 1,
+            offset: 0,
+            q: id.toString(),
+          });
+          const edges = list?.edges || [];
+          const match = edges.find(
+            (edge: { node: { id: string; uuid?: string } }) => +edge.node.id === +id,
+          );
+          if (match?.node.uuid) {
+            resolvedUuid = match.node.uuid;
+            // sync the URL so the checkout button and any reload keep the uuid
+            const params = new URLSearchParams(search);
+            params.set('uuid', resolvedUuid);
+            navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+          }
+        } catch (lookupErr) {
+          // swallow — fall through to the error path below
+        }
+      }
+
+      if (!resolvedUuid) {
+        snackbar.error('Unable to load this quote.');
+        return undefined;
+      }
+
       const data = {
         id: +id,
         date: date.toString(),
-        uuid: uuidFromQuery ? uuidFromQuery.toString() : undefined,
+        uuid: resolvedUuid,
       };
 
       const fn = +role === 99 ? getBcQuoteDetail : getB2BQuoteDetail;

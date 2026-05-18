@@ -45,6 +45,14 @@ export const handleQuoteCheckout = async ({
       return;
     }
 
+    if (!quoteUuid) {
+      // BigCommerce requires a non-null uuid on quoteCheckout (enforced May 3, 2026).
+      // The QuoteDetail page resolves the uuid before the user can checkout; if we
+      // still land here without one, bail rather than send a request that will fail.
+      b2bLogger.error('handleQuoteCheckout called without a quoteUuid');
+      return;
+    }
+
     const fn = +role === 99 ? bcQuoteCheckout : b2bQuoteCheckout;
     const date = getSearchVal(location.search, 'date');
 
