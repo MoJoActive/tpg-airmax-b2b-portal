@@ -140,7 +140,7 @@ const getQuoteInfo = `
     $id: Int!
     $storeHash: String!
     $date: String!
-    $uuid: String
+    $uuid: String!
   ) {
     quote(
       id: $id,
