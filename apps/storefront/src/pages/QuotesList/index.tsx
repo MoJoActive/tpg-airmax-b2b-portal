@@ -16,6 +16,7 @@ import {
 } from '@/shared/service/b2b';
 import { isB2BUserSelector, useAppSelector } from '@/store';
 import { channelId, currencyFormatConvert, displayFormat } from '@/utils';
+import b2bLogger from '@/utils/b3Logger';
 
 import QuoteStatus from '../quote/components/QuoteStatus';
 import { addPrice } from '../quote/shared/config';
@@ -209,9 +210,14 @@ function QuotesList() {
     if (+status === 0) {
       navigate('/quoteDraft');
     } else {
-      navigate(
-        `/quoteDetail/${item.id}?date=${item.createdAt}${item.uuid ? `&uuid=${item.uuid}` : ''}`,
-      );
+      if (!item.uuid) {
+        // BC's quote list normally returns a uuid for every row. A falsy
+        // value signals an upstream regression — surface it loudly because the
+        // post-cutover BC API requires uuid on the detail / checkout
+        // operations and QuoteDetail will have to recover via list lookup.
+        b2bLogger.warn(`QuotesList.goToDetail: missing uuid for quote id=${item.id}`);
+      }
+      navigate(`/quoteDetail/${item.id}?date=${item.createdAt}&uuid=${item.uuid ?? ''}`);
     }
   };
 

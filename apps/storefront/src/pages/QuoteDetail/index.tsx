@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
 import { Box, Button, Grid } from '@mui/material';
@@ -13,7 +13,9 @@ import {
   exportB2BQuotePdf,
   exportBcQuotePdf,
   getB2BQuoteDetail,
+  getB2BQuotesList,
   getBcQuoteDetail,
+  getBCQuotesList,
   searchB2BProducts,
   searchBcProducts,
 } from '@/shared/service/b2b';
@@ -26,7 +28,8 @@ import {
   useAppSelector,
 } from '@/store';
 import { Currency } from '@/types';
-import { snackbar } from '@/utils';
+import { channelId as activeChannelId, snackbar } from '@/utils';
+import b2bLogger from '@/utils/b3Logger';
 import { getBCPrice, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
 import { conversionProductsList } from '@/utils/b3Product/shared/config';
 import { getSearchVal } from '@/utils/loginInfo';
@@ -248,6 +251,27 @@ function QuoteDetail() {
     return undefined;
   };
 
+  const recoverUuidFromList = useCallback(async (): Promise<string> => {
+    // BigCommerce now requires a non-null uuid on the quote detail / checkout
+    // GraphQL operations. When the URL doesn't carry one (e.g. someone landed
+    // here directly via /quoteDetail/<id>), look the quote up in the user's
+    // quote list and pull the uuid from the matching summary row.
+    try {
+      const fetchList = +role === 99 ? getBCQuotesList : getB2BQuotesList;
+      const { edges = [] } = await fetchList({
+        first: 50,
+        offset: 0,
+        q: id.toString(),
+        channelId: activeChannelId,
+      });
+      const match = edges.find((edge: { node: { id: string } }) => +edge.node.id === +id);
+      return match?.node?.uuid || '';
+    } catch (lookupErr) {
+      b2bLogger.error(lookupErr);
+      return '';
+    }
+  }, [id, role]);
+
   const getQuoteDetail = async () => {
     setIsRequestLoading(true);
     setIsShowFooter(false);
@@ -256,11 +280,28 @@ function QuoteDetail() {
       const { search } = location;
 
       const date = getSearchVal(search, 'date') || '';
-      const uuidFromQuery = getSearchVal(search, 'uuid') || '';
+      let uuidFromQuery = getSearchVal(search, 'uuid') || '';
+
+      if (!uuidFromQuery) {
+        const recoveredUuid = await recoverUuidFromList();
+        if (recoveredUuid) {
+          uuidFromQuery = recoveredUuid;
+          // Persist the recovered uuid in the URL so subsequent operations
+          // (checkout fallback at the bottom of this file, page refresh, etc.)
+          // carry it forward without needing another list lookup.
+          const params = new URLSearchParams(search);
+          params.set('uuid', recoveredUuid);
+          navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+        } else {
+          snackbar.error('Unable to load this quote.');
+          return undefined;
+        }
+      }
+
       const data = {
         id: +id,
         date: date.toString(),
-        uuid: uuidFromQuery ? uuidFromQuery.toString() : undefined,
+        uuid: uuidFromQuery.toString(),
       };
 
       const fn = +role === 99 ? getBcQuoteDetail : getB2BQuoteDetail;
@@ -593,12 +634,22 @@ function QuoteDetail() {
       setQuoteCheckoutLoadding(false);
     }
   };
+  const checkoutInitiatedRef = useRef(false);
   useEffect(() => {
-    if (location.search.includes('isCheckout') && id) {
-      quoteGotoCheckout();
-    }
+    if (checkoutInitiatedRef.current) return;
+    if (!id || !location.search.includes('isCheckout')) return;
+
+    // BC's quoteCheckout mutation now requires a non-null uuid. Wait until we
+    // either have one from the URL or have hydrated quoteDetail (which will
+    // include uuid after getQuoteDetail recovers it) before kicking off
+    // checkout — otherwise the request will be rejected post-cutover.
+    const availableUuid = getSearchVal(location.search, 'uuid') || quoteDetail.uuid;
+    if (!availableUuid) return;
+
+    checkoutInitiatedRef.current = true;
+    quoteGotoCheckout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, location, proceedingCheckoutFn]);
+  }, [id, location, proceedingCheckoutFn, quoteDetail.uuid]);
 
   const isAutoEnableQuoteCheckout = useMemo(() => {
     const isAutoEnable =
