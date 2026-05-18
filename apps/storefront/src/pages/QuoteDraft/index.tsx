@@ -35,6 +35,7 @@ import { AddressItemType, BCAddressItemType } from '@/types/address';
 import { BillingAddress, ContactInfoKeys, ShippingAddress } from '@/types/quotes';
 import { B3LStorage, channelId, snackbar, storeHash } from '@/utils';
 import { addQuoteDraftProducts, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
+import b2bLogger from '@/utils/b3Logger';
 import { deleteCartData } from '@/utils/cartUtils';
 import validateObject from '@/utils/quoteUtils';
 
@@ -362,6 +363,13 @@ function QuoteDraft({ setOpenPage }: PageProps) {
 
     if (currentQuoteId) {
       handleReset();
+      if (!uuid) {
+        // BigCommerce enforces a non-null uuid on the quote / quoteCheckout
+        // GraphQL operations (effective May 3, 2026). The QuoteDetail page
+        // recovers from a missing uuid by looking it up, but log here so we
+        // can spot quote creates that did not return one.
+        b2bLogger.warn(`QuoteDraft.handleAfterSubmit: quote ${currentQuoteId} missing uuid`);
+      }
       navigate(`/quoteDetail/${currentQuoteId}?date=${createdAt}${uuid ? `&uuid=${uuid}` : ''}`, {
         state: {
           to: 'draft',

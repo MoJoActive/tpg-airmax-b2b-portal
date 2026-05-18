@@ -16,6 +16,7 @@ import {
 } from '@/shared/service/b2b';
 import { isB2BUserSelector, useAppSelector } from '@/store';
 import { channelId, currencyFormatConvert, displayFormat } from '@/utils';
+import b2bLogger from '@/utils/b3Logger';
 
 import QuoteStatus from '../quote/components/QuoteStatus';
 import { addPrice } from '../quote/shared/config';
@@ -209,6 +210,13 @@ function QuotesList() {
     if (+status === 0) {
       navigate('/quoteDraft');
     } else {
+      if (!item.uuid) {
+        // BigCommerce enforces a non-null uuid on the quote / quoteCheckout
+        // GraphQL operations (effective May 3, 2026). Quotes saved without a
+        // uuid are recoverable via the QuoteDetail fallback, but log so we
+        // can spot rows with missing data.
+        b2bLogger.warn(`QuotesList.goToDetail: quote ${item.id} missing uuid`);
+      }
       navigate(
         `/quoteDetail/${item.id}?date=${item.createdAt}${item.uuid ? `&uuid=${item.uuid}` : ''}`,
       );
