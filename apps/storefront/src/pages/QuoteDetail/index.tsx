@@ -13,7 +13,9 @@ import {
   exportB2BQuotePdf,
   exportBcQuotePdf,
   getB2BQuoteDetail,
+  getB2BQuotesList,
   getBcQuoteDetail,
+  getBCQuotesList,
   searchB2BProducts,
   searchBcProducts,
 } from '@/shared/service/b2b';
@@ -26,7 +28,8 @@ import {
   useAppSelector,
 } from '@/store';
 import { Currency } from '@/types';
-import { snackbar } from '@/utils';
+import { channelId, snackbar } from '@/utils';
+import b2bLogger from '@/utils/b3Logger';
 import { getBCPrice, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
 import { conversionProductsList } from '@/utils/b3Product/shared/config';
 import { getSearchVal } from '@/utils/loginInfo';
@@ -248,6 +251,28 @@ function QuoteDetail() {
     return undefined;
   };
 
+  // Look up a quote's uuid from the user's accessible quote list. Required as
+  // a fallback because BigCommerce (May 3, 2026) enforces non-null uuid on
+  // getQuoteInfoB2B / quoteCheckout, but legacy URLs may not carry one.
+  const recoverQuoteUuidFromList = async (quoteId: number): Promise<string> => {
+    try {
+      const listFn = +role === 99 ? getBCQuotesList : getB2BQuotesList;
+      const list = await listFn({
+        first: 50,
+        offset: 0,
+        q: quoteId.toString(),
+        channelId,
+      });
+      const edges: Array<{ node: { id: string | number; uuid?: string } }> =
+        list?.edges || [];
+      const match = edges.find((edge) => +edge.node.id === quoteId);
+      return match?.node?.uuid || '';
+    } catch (err) {
+      b2bLogger.error(err);
+      return '';
+    }
+  };
+
   const getQuoteDetail = async () => {
     setIsRequestLoading(true);
     setIsShowFooter(false);
@@ -257,10 +282,30 @@ function QuoteDetail() {
 
       const date = getSearchVal(search, 'date') || '';
       const uuidFromQuery = getSearchVal(search, 'uuid') || '';
+
+      let uuid = uuidFromQuery ? uuidFromQuery.toString() : '';
+
+      if (!uuid) {
+        uuid = await recoverQuoteUuidFromList(+id);
+        if (uuid) {
+          // Normalize the URL so subsequent operations (e.g. checkout) can
+          // recover the uuid from the search string.
+          const params = new URLSearchParams(search);
+          params.set('uuid', uuid);
+          if (date) params.set('date', date.toString());
+          navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+        }
+      }
+
+      if (!uuid) {
+        snackbar.error('Unable to load this quote.');
+        return undefined;
+      }
+
       const data = {
         id: +id,
         date: date.toString(),
-        uuid: uuidFromQuery ? uuidFromQuery.toString() : undefined,
+        uuid,
       };
 
       const fn = +role === 99 ? getBcQuoteDetail : getB2BQuoteDetail;
@@ -581,9 +626,20 @@ function QuoteDetail() {
   const quoteGotoCheckout = async () => {
     try {
       setQuoteCheckoutLoadding(true);
+      let quoteUuid: string =
+        getSearchVal(location.search, 'uuid')?.toString() || quoteDetail.uuid || '';
+      if (!quoteUuid && id) {
+        // Recover uuid via the quotes list — the user may have landed on
+        // /quoteDetail/<id>?isCheckout without a uuid in the URL.
+        quoteUuid = await recoverQuoteUuidFromList(+id);
+      }
+      if (!quoteUuid) {
+        snackbar.error('Unable to load this quote.');
+        return;
+      }
       await handleQuoteCheckout({
         quoteId: id,
-        quoteUuid: getSearchVal(location.search, 'uuid') || quoteDetail.uuid,
+        quoteUuid,
         proceedingCheckoutFn,
         role,
         location,
