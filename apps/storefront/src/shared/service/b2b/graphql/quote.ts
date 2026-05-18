@@ -300,7 +300,7 @@ const getExportQuotePdfQuery = (data: {
 const getQuoteCheckoutQuery = `mutation CheckoutQuote(
   $id: Int!
   $storeHash: String!
-  $uuid: String
+  $uuid: String!
 ) {
   quoteCheckout(
     id: $id,
@@ -666,25 +666,25 @@ export interface B2BQuoteDetail {
   };
 }
 
-export const getB2BQuoteDetail = (data: { id: number; date: string; uuid?: string }) =>
+export const getB2BQuoteDetail = (data: { id: number; date: string; uuid: string }) =>
   B3Request.graphqlB2B({
     query: getQuoteInfo,
     variables: {
       id: data.id,
       storeHash,
       date: data.date || '',
-      uuid: data.uuid || null,
+      uuid: data.uuid,
     },
   });
 
-export const getBcQuoteDetail = (data: { id: number; date: string; uuid?: string }) =>
+export const getBcQuoteDetail = (data: { id: number; date: string; uuid: string }) =>
   B3Request.graphqlB2B({
     query: getQuoteInfo,
     variables: {
       id: data.id,
       storeHash,
       date: data.date || '',
-      uuid: data.uuid || null,
+      uuid: data.uuid,
     },
   });
 
@@ -698,14 +698,14 @@ export const exportQuotePdf = (data: {
     query: getExportQuotePdfQuery(data),
   });
 
-export const quoteCheckout = ({ id, uuid }: { id: number; uuid?: string }) =>
+export const quoteCheckout = ({ id, uuid }: { id: number; uuid: string }) =>
   B3Request.graphqlB2B(
     {
       query: getQuoteCheckoutQuery,
       variables: {
         id,
         storeHash,
-        uuid: uuid || null,
+        uuid,
       },
     },
     true,
@@ -752,5 +752,5 @@ export const updateBCQuote = updateQuote;
 export const exportB2BQuotePdf = exportQuotePdf;
 export const exportBcQuotePdf = exportQuotePdf;
 export const createBCQuote = createQuote;
-export const b2bQuoteCheckout = (data: { id: number; uuid?: string }) => quoteCheckout(data);
+export const b2bQuoteCheckout = (data: { id: number; uuid: string }) => quoteCheckout(data);
 export const bcQuoteCheckout = b2bQuoteCheckout;
