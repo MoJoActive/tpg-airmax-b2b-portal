@@ -216,11 +216,13 @@ export default function RegisterComplete(props: RegisterCompleteProps) {
     _: CustomFieldItems,
     customerId: number | string,
     fileList: any,
+    customerEmail: string,
   ) => {
     try {
       const b2bFields: CustomFieldItems = {};
       b2bFields.customerId = customerId || '';
       b2bFields.storeHash = storeHash;
+      b2bFields.customerEmail = customerEmail || '';
 
       // company user extra field
       const b2bContactInformationList = list || [];
@@ -434,7 +436,12 @@ export default function RegisterComplete(props: RegisterCompleteProps) {
             const {
               customerCreate: { customer: data },
             } = res;
-            const accountInfo = await getB2BFieldsValue(completeData, data.id, fileList);
+            const accountInfo = await getB2BFieldsValue(
+              completeData,
+              data.id,
+              fileList,
+              data.email || enterEmail,
+            );
 
             const companyStatus = accountInfo?.companyCreate?.company?.companyStatus || '';
             isAuto = +companyStatus === 1;
