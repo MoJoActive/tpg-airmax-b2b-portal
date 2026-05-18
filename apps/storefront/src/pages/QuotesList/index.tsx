@@ -16,6 +16,7 @@ import {
 } from '@/shared/service/b2b';
 import { isB2BUserSelector, useAppSelector } from '@/store';
 import { channelId, currencyFormatConvert, displayFormat } from '@/utils';
+import b2bLogger from '@/utils/b3Logger';
 
 import QuoteStatus from '../quote/components/QuoteStatus';
 import { addPrice } from '../quote/shared/config';
@@ -209,9 +210,16 @@ function QuotesList() {
     if (+status === 0) {
       navigate('/quoteDraft');
     } else {
-      navigate(
-        `/quoteDetail/${item.id}?date=${item.createdAt}${item.uuid ? `&uuid=${item.uuid}` : ''}`,
-      );
+      if (!item.uuid) {
+        // BC quotes list normally returns uuid; a falsy value indicates an
+        // upstream regression. uuid is mandatory on the May 3, 2026 enforced
+        // Quote APIs — QuoteDetail will attempt a list fallback when the
+        // query string uuid is empty.
+        b2bLogger.warn(
+          `quotes list returned quote ${item.id} without uuid; QuoteDetail will need to recover it`,
+        );
+      }
+      navigate(`/quoteDetail/${item.id}?date=${item.createdAt}&uuid=${item.uuid ?? ''}`);
     }
   };
 

@@ -34,6 +34,7 @@ import {
 import { AddressItemType, BCAddressItemType } from '@/types/address';
 import { BillingAddress, ContactInfoKeys, ShippingAddress } from '@/types/quotes';
 import { B3LStorage, channelId, snackbar, storeHash } from '@/utils';
+import b2bLogger from '@/utils/b3Logger';
 import { addQuoteDraftProducts, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
 import { deleteCartData } from '@/utils/cartUtils';
 import validateObject from '@/utils/quoteUtils';
@@ -362,7 +363,15 @@ function QuoteDraft({ setOpenPage }: PageProps) {
 
     if (currentQuoteId) {
       handleReset();
-      navigate(`/quoteDetail/${currentQuoteId}?date=${createdAt}${uuid ? `&uuid=${uuid}` : ''}`, {
+      if (!uuid) {
+        // quoteCreate always returns uuid (quote.ts:122). A falsy value here
+        // indicates an upstream regression — QuoteDetail will attempt a list
+        // fallback, but flag it so we don't silently drop the param.
+        b2bLogger.warn(
+          `quoteCreate returned quote ${currentQuoteId} without uuid; downstream Quote APIs require it`,
+        );
+      }
+      navigate(`/quoteDetail/${currentQuoteId}?date=${createdAt}&uuid=${uuid ?? ''}`, {
         state: {
           to: 'draft',
         },
