@@ -337,6 +337,7 @@ export default function RegisteredBCToB2B(props: PageProps) {
 
     b2bFields.customerId = customerId || '';
     b2bFields.storeHash = storeHash;
+    b2bFields.customerEmail = emailAddress || '';
     b2bFields.userExtraFields = companyUserExtraFields;
     const companyInfo = bcTob2bCompanyInformation.filter(
       (list) => !list.custom && list.fieldType !== 'files',
