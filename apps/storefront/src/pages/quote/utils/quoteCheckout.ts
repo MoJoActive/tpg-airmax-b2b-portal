@@ -48,6 +48,14 @@ export const handleQuoteCheckout = async ({
     const fn = +role === 99 ? bcQuoteCheckout : b2bQuoteCheckout;
     const date = getSearchVal(location.search, 'date');
 
+    // BigCommerce now requires a non-null uuid on quoteCheckout. Bail with a
+    // clear log if we somehow got here without one rather than firing a request
+    // the server will reject.
+    if (!quoteUuid) {
+      b2bLogger.error('handleQuoteCheckout: missing quoteUuid; aborting checkout.');
+      return;
+    }
+
     const res = await fn({
       id: +quoteId,
       uuid: quoteUuid,
