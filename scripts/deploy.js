@@ -203,16 +203,17 @@ const finished = () => {
     )}`
   )
 
+  const distPath = path.join(__dirname, '../apps/storefront/dist')
   const indexFileHash = fs
-    .readdirSync('./apps/storefront/dist')
+    .readdirSync(distPath)
     .find((o) => o.includes('index.'))
     .split('.')[1]
   const polyfillsFileHash = fs
-    .readdirSync('./apps/storefront/dist')
+    .readdirSync(distPath)
     .find((o) => o.includes('polyfills-legacy.'))
     .split('.')[1]
   const indexLegacyFileHash = fs
-    .readdirSync('./apps/storefront/dist')
+    .readdirSync(distPath)
     .find((o) => o.includes('index-legacy.'))
     .split('.')[1]
 
@@ -257,7 +258,6 @@ const finished = () => {
 ></script>`
 
   // Write a ready-to-paste Script Manager block as a build artifact
-  const distPath = path.join(__dirname, '../apps/storefront/dist')
   const scriptManagerHtml = `<!-- Paste this block verbatim into BigCommerce Script Manager. Build hash: ${indexFileHash} -->\n${template}`
   fs.writeFileSync(path.join(distPath, 'script-manager.html'), scriptManagerHtml)
 
