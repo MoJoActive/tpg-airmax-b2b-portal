@@ -40,7 +40,9 @@ const getEnvironment = (environment?: Environment): Environment => {
 
   if (b3Environment !== undefined) {
     b2bLogger.error(
-      `[B3] Unrecognized B3.setting.environment "${b3Environment}"; falling back to "${DEFAULT_ENVIRONMENT}". Valid: ${Object.values(Environment).join(', ')}.`,
+      `[B3] Unrecognized B3.setting.environment "${b3Environment}"; falling back to "${DEFAULT_ENVIRONMENT}". Valid: ${Object.values(
+        Environment,
+      ).join(', ')}.`,
     );
   }
 
