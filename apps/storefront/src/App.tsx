@@ -37,7 +37,6 @@ import {
   rolePermissionSelector,
   setGlabolCommonState,
   setOpenPageReducer,
-  store,
   useAppDispatch,
   useAppSelector,
 } from './store';
@@ -201,13 +200,6 @@ export default function App() {
             showPageMask(false);
             return;
           }
-
-          const { customerGroupId } = store.getState().company.customer;
-          if (customerGroupId !== 10) {
-            logoutSession();
-            showPageMask(false);
-            return;
-          }
         }
 
         // bc graphql token
@@ -230,7 +222,7 @@ export default function App() {
 
         if (!customerId) {
           const info = await getCurrentCustomerInfo().catch((error) => {
-            if (isCompanyError(error)) {
+            if (isCompanyError(error) && !pathname.includes('checkout')) {
               gotoPage(`/login?loginFlag=${error.reason}`);
             }
           });
