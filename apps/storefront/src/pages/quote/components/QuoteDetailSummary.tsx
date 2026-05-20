@@ -140,17 +140,17 @@ export default function QuoteDetailSummary({
         });
 
         const includes = 'consignments.availableShippingOptions';
-        const billingAddress: ShippingAddress = {
-          firstName: quoteDetail.billingAddress.firstName,
-          lastName: quoteDetail.billingAddress.lastName,
-          email: quoteDetail.billingAddress.email,
-          company: quoteDetail.companyId.companyName,
-          address1: quoteDetail.billingAddress.address,
-          address2: '',
-          city: quoteDetail.billingAddress.city,
-          stateOrProvinceCode: quoteDetail.billingAddress.stateCode,
-          countryCode: quoteDetail.billingAddress.countryCode,
-          postalCode: quoteDetail.billingAddress.zipCode,
+        const shippingAddress: ShippingAddress = {
+          firstName: quoteDetail.shippingAddress.firstName,
+          lastName: quoteDetail.shippingAddress.lastName,
+          email: quoteDetail.contactInfo?.email || '',
+          company: quoteDetail.companyId?.companyName || '',
+          address1: quoteDetail.shippingAddress.address,
+          address2: quoteDetail.shippingAddress.apartment || '',
+          city: quoteDetail.shippingAddress.city,
+          stateOrProvinceCode: quoteDetail.shippingAddress.state,
+          countryCode: quoteDetail.shippingAddress.country,
+          postalCode: quoteDetail.shippingAddress.zipCode,
         };
 
         const consignmentResponse = await fetch(
@@ -160,7 +160,7 @@ export default function QuoteDetailSummary({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify([
               {
-                shippingAddress: billingAddress,
+                shippingAddress,
                 lineItems,
               },
             ]),
