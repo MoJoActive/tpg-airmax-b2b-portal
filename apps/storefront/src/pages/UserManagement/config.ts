@@ -100,7 +100,7 @@ const getFilterMoreList = (b3Lang: LangFormatFunction) => {
       variant: 'filled',
       size: 'small',
     },
-  ] satisfies [unknown];
+  ];
 };
 
 const getUsersFiles = (type: string, b3Lang: LangFormatFunction, disabledUserRole = false) => {
