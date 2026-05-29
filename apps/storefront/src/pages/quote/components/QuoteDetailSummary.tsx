@@ -63,7 +63,7 @@ interface ShippingAddress {
 }
 
 export default function QuoteDetailSummary({
-  quoteSummary: { originalSubtotal, discount, tax, /* shipping, */ totalAmount },
+  quoteSummary: { originalSubtotal, discount },
   quoteDetailTax = 0,
   status,
   quoteDetail,
@@ -106,9 +106,10 @@ export default function QuoteDetailSummary({
   >(null);
 
   const [selectedShippingOption, setSelectedShippingOption] = useState<string | null>(null);
+  const [liveTax, setLiveTax] = useState<number | null>(null);
 
   useEffect(() => {
-    const getShippingOptions = async () => {
+    const getLiveSummary = async () => {
       if (shippingOptions) return;
 
       const lineItems = quoteDetail?.productsList?.map((item: CartItem) => ({
@@ -169,17 +170,20 @@ export default function QuoteDetailSummary({
 
         const consignmentData = await consignmentResponse.json();
 
-        const shippingOptions = consignmentData.consignments[0].availableShippingOptions.map(
-          (option: ShippingOption) => {
-            if (option.isRecommended) setSelectedShippingOption(option.id);
-            return {
-              id: option.id,
-              description: option.description,
-              cost: option.cost,
-              isRecommended: option.isRecommended,
-            };
-          },
-        );
+        setLiveTax(consignmentData.taxTotal ?? 0);
+
+        const shippingOptions =
+          consignmentData.consignments[0]?.availableShippingOptions?.map(
+            (option: ShippingOption) => {
+              if (option.isRecommended) setSelectedShippingOption(option.id);
+              return {
+                id: option.id,
+                description: option.description,
+                cost: option.cost,
+                isRecommended: option.isRecommended,
+              };
+            },
+          ) || [];
 
         setShippingOptions(shippingOptions);
 
@@ -214,7 +218,7 @@ export default function QuoteDetailSummary({
       }
     };
 
-    getShippingOptions();
+    getLiveSummary();
   }, [quoteDetail, shippingOptions]);
 
   const showPrice = (price: string | number | null): string | number => {
@@ -300,7 +304,9 @@ export default function QuoteDetailSummary({
               }}
             >
               <Typography>{b3Lang('quoteDetail.summary.tax')}</Typography>
-              <Typography>{showPrice(priceFormat(+tax))}</Typography>
+              <Typography>
+                {showPrice(priceFormat(liveTax !== null ? liveTax : 'Calculating...'))}
+              </Typography>
             </Grid>
             <Grid
               container
@@ -380,9 +386,12 @@ export default function QuoteDetailSummary({
               >
                 {showPrice(
                   priceFormat(
-                    +totalAmount +
-                      (shippingOptions?.find((opt) => opt.id === selectedShippingOption)?.cost ??
-                        0),
+                    shippingOptions === null || liveTax === null
+                      ? 'Calculating...'
+                      : quotedSubtotal +
+                          liveTax +
+                          (shippingOptions?.find((opt) => opt.id === selectedShippingOption)
+                            ?.cost ?? 0),
                   ),
                 )}
               </Typography>
