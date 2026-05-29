@@ -52,8 +52,8 @@ function QuoteDetailFooter(props: QuoteDetailFooterProps) {
       <CustomButton
         variant="contained"
         onClick={() => {
+          if (proceedingCheckoutFn()) return;
           handleQuoteCheckout({
-            proceedingCheckoutFn,
             role,
             location,
             quoteId,

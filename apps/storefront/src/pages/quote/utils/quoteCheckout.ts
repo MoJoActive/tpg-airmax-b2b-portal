@@ -13,7 +13,6 @@ import { getSearchVal } from '@/utils/loginInfo';
 
 interface QuoteCheckout {
   role: string | number;
-  proceedingCheckoutFn: () => boolean;
   location: Location;
   quoteId: string;
   quoteUuid?: string;
@@ -22,7 +21,6 @@ interface QuoteCheckout {
 
 export const handleQuoteCheckout = async ({
   role,
-  proceedingCheckoutFn,
   location,
   quoteId,
   quoteUuid,
@@ -30,10 +28,6 @@ export const handleQuoteCheckout = async ({
 }: QuoteCheckout) => {
   try {
     store.dispatch(setQuoteDetailToCheckoutUrl(''));
-
-    const isHideQuoteCheckout = proceedingCheckoutFn();
-
-    if (isHideQuoteCheckout) return;
 
     const {
       storefrontProductSettings: { hidePriceFromGuests },
@@ -61,15 +55,22 @@ export const handleQuoteCheckout = async ({
       uuid: quoteUuid,
     });
 
-    setQuoteToStorage(quoteId, date);
-    const {
-      quoteCheckout: {
-        quoteCheckout: { checkoutUrl, cartId },
-      },
-    } = res;
+    const checkout = res?.quoteCheckout?.quoteCheckout;
+
+    if (!checkout) {
+      return;
+    }
+
+    setQuoteToStorage(quoteId, date, quoteUuid);
+    const { checkoutUrl, cartId } = checkout;
 
     if (platform === 'bigcommerce') {
       window.location.href = checkoutUrl;
+      return;
+    }
+
+    if (platform === 'catalyst') {
+      window.location.href = `/checkout?cartId=${cartId}`;
       return;
     }
 

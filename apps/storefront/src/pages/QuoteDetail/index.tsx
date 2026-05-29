@@ -616,12 +616,12 @@ function QuoteDetail() {
   }, [location, navigate, role]);
 
   const quoteGotoCheckout = async () => {
+    if (proceedingCheckoutFn()) return;
     try {
       setQuoteCheckoutLoadding(true);
       await handleQuoteCheckout({
         quoteId: id,
         quoteUuid: getSearchVal(location.search, 'uuid') || quoteDetail.uuid,
-        proceedingCheckoutFn,
         role,
         location,
         navigate,
