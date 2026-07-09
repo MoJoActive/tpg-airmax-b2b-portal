@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom';
 import { usePageMask } from '@/components';
 import GlobalDialog from '@/components/extraTip/GlobalDialog';
 import B3RenderRouter from '@/components/layout/B3RenderRouter';
+import { B2B_PORTAL_CUSTOMER_GROUP_ID, CHECKOUT_URL } from '@/constants';
 import { useB3AppOpen, useSetOpen } from '@/hooks';
 import useDomHooks from '@/hooks/dom/useDomHooks';
 import { CustomStyleContext } from '@/shared/customStyleButton';
@@ -31,7 +32,6 @@ import {
   getTemPlateConfig,
   setStorefrontConfig,
 } from './utils/storefrontConfig';
-import { CHECKOUT_URL } from './constants';
 import {
   isB2BUserSelector,
   rolePermissionSelector,
@@ -203,7 +203,7 @@ export default function App() {
           }
 
           const { customerGroupId } = store.getState().company.customer;
-          if (customerGroupId !== 10) {
+          if (customerGroupId !== B2B_PORTAL_CUSTOMER_GROUP_ID) {
             logoutSession();
             showPageMask(false);
             return;

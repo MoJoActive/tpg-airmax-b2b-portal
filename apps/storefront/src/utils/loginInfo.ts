@@ -1,3 +1,4 @@
+import { B2B_PORTAL_CUSTOMER_GROUP_ID } from '@/constants';
 import {
   endUserMasqueradingCompany,
   getAgentInfo,
@@ -296,7 +297,7 @@ export const getCurrentCustomerInfo = async (b2bToken?: string) => {
       customerGroupId,
     } = loginCustomer;
 
-    if (customerGroupId !== 10) {
+    if (customerGroupId !== B2B_PORTAL_CUSTOMER_GROUP_ID) {
       clearCurrentCustomerInfo();
       return undefined;
     }

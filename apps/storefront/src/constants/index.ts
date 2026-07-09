@@ -69,6 +69,8 @@ export const BROWSER_LANG = navigator.language.substring(0, 2);
 export const CART_URL = '/cart.php';
 export const CHECKOUT_URL = '/checkout';
 
+export const B2B_PORTAL_CUSTOMER_GROUP_ID = 3;
+
 export const Z_INDEX: Record<
   'IFRAME' | 'BASE' | 'STICKY' | 'OVERLAY' | 'MODAL' | 'TOOLTIP' | 'NOTIFICATION',
   number

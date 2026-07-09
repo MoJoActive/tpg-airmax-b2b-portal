@@ -8,7 +8,7 @@ const execa = require('execa')
 const WebDAV = require('webdav-fs')
 const { glob } = require('glob')
 
-const isProd = true;
+const isProd = false;
 const config = {
   WEBDAV_USERNAME: 'domains@mojoactive.com',
   WEBDAV_PASSWORD: isProd ? '476de323f122185fc8b11e12f6d28c3c442e1bc2' : 'bae69ee1175f9509fbfa74a5da468681',
