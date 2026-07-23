@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 
 import CustomButton from '@/components/button/CustomButton';
 import { useMobile } from '@/hooks';
+import { ShippingAddress } from '@/types/quotes';
 
 import { handleQuoteCheckout } from '../utils/quoteCheckout';
 
@@ -14,10 +15,23 @@ interface QuoteDetailFooterProps {
   isAgenting: boolean;
   status: number;
   proceedingCheckoutFn: () => boolean;
+  shippingAddress?: ShippingAddress;
+  contactEmail?: string;
+  companyId?: string | number;
 }
 
 function QuoteDetailFooter(props: QuoteDetailFooterProps) {
-  const { quoteId, quoteUuid, role, isAgenting, status, proceedingCheckoutFn } = props;
+  const {
+    quoteId,
+    quoteUuid,
+    role,
+    isAgenting,
+    status,
+    proceedingCheckoutFn,
+    shippingAddress,
+    contactEmail,
+    companyId,
+  } = props;
   const [isMobile] = useMobile();
   const b3Lang = useB3Lang();
   const location = useLocation();
@@ -59,6 +73,9 @@ function QuoteDetailFooter(props: QuoteDetailFooterProps) {
             quoteId,
             quoteUuid,
             navigate,
+            shippingAddress,
+            contactEmail,
+            companyId,
           });
         }}
         sx={{

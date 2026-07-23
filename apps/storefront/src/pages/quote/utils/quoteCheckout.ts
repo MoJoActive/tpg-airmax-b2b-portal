@@ -6,10 +6,15 @@ import {
   getBCStorefrontProductSettings,
 } from '@/shared/service/b2b';
 import { setQuoteDetailToCheckoutUrl, store } from '@/store';
+import { ShippingAddress } from '@/types/quotes';
 import { attemptCheckoutLoginAndRedirect, setQuoteToStorage } from '@/utils/b3checkout';
 import b2bLogger from '@/utils/b3Logger';
 import { platform } from '@/utils/basicConfig';
 import { getSearchVal } from '@/utils/loginInfo';
+import {
+  mapQuoteShippingToStorefront,
+  storeQuoteShippingAddress,
+} from '@/utils/quoteShippingAddress';
 
 interface QuoteCheckout {
   role: string | number;
@@ -17,6 +22,9 @@ interface QuoteCheckout {
   quoteId: string;
   quoteUuid?: string;
   navigate?: NavigateFunction;
+  shippingAddress?: ShippingAddress;
+  contactEmail?: string;
+  companyId?: string | number;
 }
 
 export const handleQuoteCheckout = async ({
@@ -25,6 +33,8 @@ export const handleQuoteCheckout = async ({
   quoteId,
   quoteUuid,
   navigate,
+  shippingAddress,
+  contactEmail,
 }: QuoteCheckout) => {
   try {
     store.dispatch(setQuoteDetailToCheckoutUrl(''));
@@ -63,6 +73,14 @@ export const handleQuoteCheckout = async ({
 
     setQuoteToStorage(quoteId, date, quoteUuid);
     const { checkoutUrl, cartId } = checkout;
+
+    const storefrontShipping = shippingAddress
+      ? mapQuoteShippingToStorefront(shippingAddress, contactEmail)
+      : null;
+
+    if (storefrontShipping && cartId) {
+      storeQuoteShippingAddress(storefrontShipping, cartId);
+    }
 
     if (platform === 'bigcommerce') {
       window.location.href = checkoutUrl;
