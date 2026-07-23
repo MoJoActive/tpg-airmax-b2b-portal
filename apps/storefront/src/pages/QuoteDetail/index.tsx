@@ -625,6 +625,9 @@ function QuoteDetail() {
         role,
         location,
         navigate,
+        shippingAddress: quoteDetail.shippingAddress,
+        contactEmail: quoteDetail.contactInfo?.email,
+        companyId: companyInfoId || quoteDetail.companyId?.id,
       });
     } finally {
       setQuoteCheckoutLoadding(false);
@@ -867,6 +870,9 @@ function QuoteDetail() {
               isAgenting={isAgenting}
               status={quoteDetail.status}
               proceedingCheckoutFn={proceedingCheckoutFn}
+              shippingAddress={quoteDetail.shippingAddress}
+              contactEmail={quoteDetail.contactInfo?.email}
+              companyId={companyInfoId || quoteDetail.companyId?.id}
             />
           )}
       </Box>

@@ -32,11 +32,13 @@ export interface ShippingAddress {
   city: string;
   companyName: string;
   country: string;
+  countryCode?: string;
   firstName: string;
   label: string;
   lastName: string;
   phoneNumber: string;
   state: string;
+  stateCode?: string;
   zipCode: string;
 }
 
