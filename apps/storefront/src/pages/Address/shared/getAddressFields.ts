@@ -42,31 +42,31 @@ interface ExtraFieldsProp extends RegisterFieldsItems {
 
 const convertExtraFields = (extraFields: B2bExtraFieldsProps[]): [] | ExtraFieldsProp[] => {
   if (extraFields.length === 0) return [];
-  const visibleFields =
-    extraFields.filter((field: B2bExtraFieldsProps) => field.visibleToEnduser) || [];
 
-  if (visibleFields?.length === 0) return [];
+  const formFields =
+    extraFields.filter(
+      (field: B2bExtraFieldsProps) => field.visibleToEnduser || field.isRequired,
+    ) || [];
 
-  const b2bExtraFields = visibleFields.map((field: B2bExtraFieldsProps) => {
+  if (formFields?.length === 0) return [];
+
+  const b2bExtraFields = formFields.map((field: B2bExtraFieldsProps) => {
     const fields = {
       ...field,
       groupId: 4,
-      visible: field.visibleToEnduser,
+      custom: true,
+      visible: true,
     };
 
     return fields;
   });
 
-  const convertB2BExtraFields = getAccountFormFields(b2bExtraFields).address;
+  const convertB2BExtraFields = getAccountFormFields(b2bExtraFields).address ?? [];
 
-  convertB2BExtraFields.map((extraField: ExtraFieldsProp) => {
-    const field = extraField;
-    field.custom = true;
-
-    return extraField;
-  });
-
-  return convertB2BExtraFields;
+  return convertB2BExtraFields.map((extraField: ExtraFieldsProp) => ({
+    ...extraField,
+    custom: true,
+  })) as ExtraFieldsProp[];
 };
 
 const getBcAddressFields = async () => {
