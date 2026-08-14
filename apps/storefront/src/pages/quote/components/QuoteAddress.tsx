@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import { forwardRef, Ref, useEffect, useImperativeHandle, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useB3Lang } from '@b3/lang';
 import { Box, Typography } from '@mui/material';
@@ -29,6 +29,12 @@ interface AddressProps {
   shippingSameAsBilling: boolean;
   type: string;
   setBillingChange: (value: boolean) => void;
+}
+
+export interface QuoteAddressRef {
+  getContactInfoValue: () => ShippingAddress & BillingAddress;
+  setShippingInfoValue: (address: CustomFieldItems) => void;
+  validate: () => Promise<boolean>;
 }
 
 export interface FormFieldsProps {
@@ -73,7 +79,7 @@ function QuoteAddress(
     type,
     setBillingChange,
   }: AddressProps,
-  ref: unknown,
+  ref: Ref<QuoteAddressRef>,
 ) {
   const {
     control,
@@ -115,7 +121,7 @@ function QuoteAddress(
       });
   };
 
-  const getContactInfoValue = () => getValues();
+  const getContactInfoValue = () => getValues() as ShippingAddress & BillingAddress;
   const setShippingInfoValue = (address: CustomFieldItems) => {
     const addressKey = Object.keys(address);
 
