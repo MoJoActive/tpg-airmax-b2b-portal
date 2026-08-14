@@ -32,7 +32,12 @@ import {
   useAppSelector,
 } from '@/store';
 import { AddressItemType, BCAddressItemType } from '@/types/address';
-import { BillingAddress, ContactInfoKeys, ShippingAddress } from '@/types/quotes';
+import {
+  BillingAddress,
+  ContactInfo as ContactInfoType,
+  ContactInfoKeys,
+  ShippingAddress,
+} from '@/types/quotes';
 import { B3LStorage, channelId, snackbar, storeHash } from '@/utils';
 import b2bLogger from '@/utils/b3Logger';
 import { addQuoteDraftProducts, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
@@ -45,7 +50,7 @@ import { getB2BAddressExtraFormFields } from '../Address/shared/getAddressFields
 import { type PageProps } from '../PageProps';
 import AddToQuote from '../quote/components/AddToQuote';
 import ContactInfo from '../quote/components/ContactInfo';
-import QuoteAddress from '../quote/components/QuoteAddress';
+import QuoteAddress, { QuoteAddressRef } from '../quote/components/QuoteAddress';
 import QuoteAttachment from '../quote/components/QuoteAttachment';
 import QuoteInfo from '../quote/components/QuoteInfo';
 import QuoteNote from '../quote/components/QuoteNote';
@@ -74,13 +79,11 @@ export interface Country {
   id?: string;
 }
 
-interface InfoRefProps extends HTMLInputElement {
-  getContactInfoValue: () => any;
-  setShippingInfoValue: (address: any) => void;
-  validate?: () => Promise<boolean>;
+interface ContactInfoRefProps {
+  getContactInfoValue: () => Promise<ContactInfoType | null> | ContactInfoType | null;
 }
 
-interface QuoteSummaryRef extends HTMLInputElement {
+interface QuoteSummaryRef {
   refreshSummary: () => void;
 }
 
@@ -202,9 +205,9 @@ function QuoteDraft({ setOpenPage }: PageProps) {
     loadAddressFormFields();
   }, [isB2BUser, isMobile, b3Lang]);
 
-  const contactInfoRef = useRef<InfoRefProps | null>(null);
-  const billingRef = useRef<InfoRefProps | null>(null);
-  const shippingRef = useRef<InfoRefProps | null>(null);
+  const contactInfoRef = useRef<ContactInfoRefProps | null>(null);
+  const billingRef = useRef<QuoteAddressRef | null>(null);
+  const shippingRef = useRef<QuoteAddressRef | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -337,11 +340,11 @@ function QuoteDraft({ setOpenPage }: PageProps) {
       saveInfo.contactInfo = contactInfo;
     }
 
-    if (billingRef?.current?.validate) {
+    if (billingRef?.current) {
       const billingValid = await billingRef.current.validate();
       if (!billingValid) return;
     }
-    if (shippingRef?.current?.validate) {
+    if (shippingRef?.current) {
       const shippingValid = await shippingRef.current.validate();
       if (!shippingValid) return;
     }
@@ -490,14 +493,14 @@ function QuoteDraft({ setOpenPage }: PageProps) {
           return withExtras;
         };
 
-        if (billingRef?.current?.validate) {
+        if (billingRef?.current) {
           const billingValid = await billingRef.current.validate();
           if (!billingValid) {
             snackbar.error(b3Lang('quoteDraft.addQuoteInfo'));
             return;
           }
         }
-        if (shippingRef?.current?.validate) {
+        if (shippingRef?.current) {
           const shippingValid = await shippingRef.current.validate();
           if (!shippingValid) {
             snackbar.error(b3Lang('quoteDraft.addQuoteInfo'));
