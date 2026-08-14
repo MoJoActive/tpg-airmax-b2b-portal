@@ -86,10 +86,19 @@ const getBcAddressFields = async () => {
   return undefined;
 };
 
-const getB2BAddressFields = async () => {
+export const getB2BAddressExtraFormFields = async () => {
   try {
     const res = await getB2BAddressExtraFields();
-    const b2bExtraFields = convertExtraFields(res.addressExtraFields);
+    return convertExtraFields(res.addressExtraFields);
+  } catch (e) {
+    b2bLogger.error(e);
+  }
+  return [];
+};
+
+const getB2BAddressFields = async () => {
+  try {
+    const b2bExtraFields = await getB2BAddressExtraFormFields();
     const addressFields = [...b2bAddressFields, ...b2bExtraFields];
     return addressFields;
   } catch (e) {

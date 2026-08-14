@@ -10,6 +10,11 @@ export interface ContactInfo {
   quoteTitle?: string;
 }
 
+export interface QuoteAddressExtraField {
+  fieldName: string;
+  fieldValue: string;
+}
+
 export interface BillingAddress {
   address: string;
   addressId: number;
@@ -23,6 +28,7 @@ export interface BillingAddress {
   phoneNumber: string;
   state: string;
   zipCode: string;
+  extraFields?: QuoteAddressExtraField[];
 }
 
 export interface ShippingAddress {
@@ -40,6 +46,7 @@ export interface ShippingAddress {
   state: string;
   stateCode?: string;
   zipCode: string;
+  extraFields?: QuoteAddressExtraField[];
 }
 
 export interface FileInfo {

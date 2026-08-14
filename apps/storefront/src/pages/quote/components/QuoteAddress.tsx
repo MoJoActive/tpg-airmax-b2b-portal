@@ -9,23 +9,14 @@ import { useGetCountry, useMobile } from '@/hooks';
 import { AddressItemType } from '@/types/address';
 import { BillingAddress, ContactInfo, ShippingAddress } from '@/types/quotes';
 
+import { deCodeField } from '../../Registered/config';
+import { QuoteAddressFormField } from '../config';
+
 import ChooseAddress from './ChooseAddress';
 
 type AddressItemProps = {
   node: AddressItemType;
 };
-
-interface AccountFormFieldsProps extends Record<string, any> {
-  name: string;
-  label?: string;
-  required?: boolean;
-  fieldType?: string;
-  default?: string | Array<any> | number;
-  xs: number;
-  variant: string;
-  size: string;
-  options?: any[];
-}
 
 interface AddressProps {
   title: string;
@@ -34,26 +25,27 @@ interface AddressProps {
   addressList?: AddressItemProps[];
   info: ContactInfo | ShippingAddress | BillingAddress;
   role: string | number;
-  accountFormFields: AccountFormFieldsProps[];
+  accountFormFields: QuoteAddressFormField[];
   shippingSameAsBilling: boolean;
   type: string;
   setBillingChange: (value: boolean) => void;
 }
 
-export interface FormFieldsProps extends Record<string, any> {
+export interface FormFieldsProps {
   name: string;
   label?: string;
   required?: boolean;
   fieldType?: string;
-  default?: string | Array<any> | number;
+  default?: string | number | Array<string | number>;
   xs: number;
   variant: string;
   size: string;
-  options?: any[];
+  options?: Array<Record<string, string | number>>;
   replaceOptions?: {
     label: string;
     value: string;
   };
+  [key: string]: unknown;
 }
 
 export interface Country {
@@ -81,13 +73,14 @@ function QuoteAddress(
     type,
     setBillingChange,
   }: AddressProps,
-  ref: any,
+  ref: unknown,
 ) {
   const {
     control,
     getValues,
     formState: { errors },
     setValue,
+    trigger,
   } = useForm({
     mode: 'onSubmit',
   });
@@ -98,7 +91,7 @@ function QuoteAddress(
   type InfoKeys = keyof typeof info;
 
   const [isOpen, setOpen] = useState<boolean>(false);
-  const [quoteAddress, setQuoteAddress] = useState<AccountFormFieldsProps[]>(
+  const [quoteAddress, setQuoteAddress] = useState<QuoteAddressFormField[]>(
     cloneDeep(accountFormFields),
   );
 
@@ -106,23 +99,40 @@ function QuoteAddress(
     control,
     setValue,
     getValues,
-    setAddress: setQuoteAddress,
-    addresses: quoteAddress,
+    setAddress: (fields) => setQuoteAddress(fields as QuoteAddressFormField[]),
+    addresses: quoteAddress as FormFieldsProps[],
   });
 
+  const applyExtraFields = (
+    extraFields: { fieldName: string; fieldValue: string }[] = [],
+    fields: QuoteAddressFormField[] = accountFormFields,
+  ) => {
+    fields
+      .filter((field) => field.custom)
+      .forEach((field) => {
+        const match = extraFields.find((item) => item.fieldName === deCodeField(field.name));
+        setValue(field.name, match?.fieldValue || field.default || '');
+      });
+  };
+
   const getContactInfoValue = () => getValues();
-  const setShippingInfoValue = (address: any) => {
+  const setShippingInfoValue = (address: CustomFieldItems) => {
     const addressKey = Object.keys(address);
 
     addressKey.forEach((item: string) => {
-      if (item === 'company') return;
+      if (item === 'company' || item === 'extraFields') return;
       setValue(item, address[item]);
     });
+
+    if (Array.isArray(address.extraFields)) {
+      applyExtraFields(address.extraFields);
+    }
   };
 
   useImperativeHandle(ref, () => ({
     getContactInfoValue,
     setShippingInfoValue,
+    validate: () => trigger(),
   }));
 
   const handleAddressChoose = () => {
@@ -134,7 +144,7 @@ function QuoteAddress(
   };
 
   const handleChangeAddress = (address: AddressItemType) => {
-    const addressItem: any = {
+    const addressItem: Record<string, string> = {
       label: address?.label || '',
       firstName: address?.firstName || '',
       lastName: address?.lastName || '',
@@ -152,6 +162,9 @@ function QuoteAddress(
       if (item === 'company') return;
       setValue(item, addressItem[item]);
     });
+
+    applyExtraFields(address?.extraFields || []);
+
     if (type === 'billing' && shippingSameAsBilling) {
       setBillingChange(true);
     }
@@ -160,14 +173,21 @@ function QuoteAddress(
   };
 
   useEffect(() => {
+    setQuoteAddress(cloneDeep(accountFormFields));
+  }, [accountFormFields]);
+
+  useEffect(() => {
     if (JSON.stringify(info) !== '{}') {
       Object.keys(info).forEach((item: string) => {
+        if (item === 'extraFields') return;
         setValue(item, info[item as InfoKeys]);
       });
+
+      applyExtraFields((info as ShippingAddress | BillingAddress).extraFields || []);
     }
     // Disabling this rule as dispatcher dep setValue is the same between renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [info]);
+  }, [info, accountFormFields]);
 
   return (
     <Box width={isMobile ? '100%' : '50%'} mt={isMobile ? '2rem' : '0'} pr={pr} pl={pl}>

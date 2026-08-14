@@ -1,7 +1,90 @@
 import { LangFormatFunction } from '@b3/lang';
 
-const getAccountFormFields = (isMobile: boolean, b3Lang: LangFormatFunction) => {
-  const accountFormFields = [
+import { deCodeField } from '../Registered/config';
+
+export interface QuoteAddressFormField {
+  name: string;
+  label?: string;
+  required?: boolean;
+  default?: string | number | Array<string | number>;
+  fieldType?: string | number;
+  custom?: boolean;
+  xs?: number;
+  variant?: string;
+  size?: string;
+  options?: Array<Record<string, string | number>>;
+  replaceOptions?: {
+    label: string;
+    value: string;
+  };
+  [key: string]: unknown;
+}
+
+type QuoteAddressExtraFieldValue = {
+  fieldName: string;
+  fieldValue: string;
+};
+
+export const buildAddressWithExtraFields = (
+  address: CustomFieldItems,
+  formFields: QuoteAddressFormField[],
+) => {
+  const customFields = formFields.filter((field) => field.custom);
+  if (customFields.length === 0) {
+    return address;
+  }
+
+  const newAddress: CustomFieldItems = { ...address };
+  const existingExtras: QuoteAddressExtraFieldValue[] = Array.isArray(address.extraFields)
+    ? address.extraFields
+    : [];
+
+  const extraFields = customFields.map((field) => {
+    const fieldName = deCodeField(field.name);
+    const existing = existingExtras.find((item) => item.fieldName === fieldName);
+    const fieldValue = newAddress[field.name] ?? existing?.fieldValue ?? field.default ?? '';
+
+    delete newAddress[field.name];
+
+    return {
+      fieldName,
+      fieldValue: fieldValue === undefined || fieldValue === null ? '' : String(fieldValue),
+    };
+  });
+
+  delete newAddress.extraFields;
+
+  return {
+    ...newAddress,
+    extraFields,
+  };
+};
+
+export const hasMissingRequiredAddressExtraFields = (
+  address: CustomFieldItems | undefined,
+  formFields: QuoteAddressFormField[],
+) => {
+  if (!address) return false;
+
+  return formFields
+    .filter((field) => field.custom && field.required)
+    .some((field) => {
+      const fieldName = deCodeField(field.name);
+      const nestedValue = Array.isArray(address.extraFields)
+        ? address.extraFields.find(
+            (item: QuoteAddressExtraFieldValue) => item.fieldName === fieldName,
+          )?.fieldValue
+        : undefined;
+      const value = address[field.name] ?? nestedValue ?? '';
+      return !String(value).trim();
+    });
+};
+
+const getAccountFormFields = (
+  isMobile: boolean,
+  b3Lang: LangFormatFunction,
+): QuoteAddressFormField[] => {
+  const accountFormFields: QuoteAddressFormField[] = [
     {
       name: 'label',
       label: b3Lang('quoteDraft.config.addressLabel'),

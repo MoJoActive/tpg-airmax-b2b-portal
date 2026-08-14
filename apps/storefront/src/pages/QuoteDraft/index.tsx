@@ -41,6 +41,7 @@ import validateObject from '@/utils/quoteUtils';
 
 import { getProductOptionsFields } from '../../utils/b3Product/shared/config';
 import { convertBCToB2BAddress } from '../Address/shared/config';
+import { getB2BAddressExtraFormFields } from '../Address/shared/getAddressFields';
 import { type PageProps } from '../PageProps';
 import AddToQuote from '../quote/components/AddToQuote';
 import ContactInfo from '../quote/components/ContactInfo';
@@ -52,7 +53,11 @@ import QuoteStatus from '../quote/components/QuoteStatus';
 import QuoteSubmissionResponse from '../quote/components/QuoteSubmissionResponse';
 import QuoteSummary from '../quote/components/QuoteSummary';
 import QuoteTable from '../quote/components/QuoteTable';
-import getAccountFormFields from '../quote/config';
+import getAccountFormFields, {
+  buildAddressWithExtraFields,
+  hasMissingRequiredAddressExtraFields,
+  QuoteAddressFormField,
+} from '../quote/config';
 import Container from '../quote/style';
 
 type BCAddress = {
@@ -72,6 +77,7 @@ export interface Country {
 interface InfoRefProps extends HTMLInputElement {
   getContactInfoValue: () => any;
   setShippingInfoValue: (address: any) => void;
+  validate?: () => Promise<boolean>;
 }
 
 interface QuoteSummaryRef extends HTMLInputElement {
@@ -163,10 +169,38 @@ function QuoteDraft({ setOpenPage }: PageProps) {
   const [quoteId, setQuoteId] = useState<string | number>('');
   const [currentCreatedAt, setCurrentCreatedAt] = useState<string | number>('');
   const [currentUuid, setCurrentUuid] = useState<string>('');
+  const [accountFormFields, setAccountFormFields] = useState<QuoteAddressFormField[]>(() =>
+    getAccountFormFields(isMobile, b3Lang),
+  );
 
   const quoteSummaryRef = useRef<QuoteSummaryRef | null>(null);
 
   useSetCountry();
+
+  useEffect(() => {
+    const loadAddressFormFields = async () => {
+      const baseFields = getAccountFormFields(isMobile, b3Lang);
+      if (!isB2BUser) {
+        setAccountFormFields(baseFields);
+        return;
+      }
+
+      const extraFields = await getB2BAddressExtraFormFields();
+      setAccountFormFields([
+        ...baseFields,
+        ...extraFields.map(
+          (field): QuoteAddressFormField => ({
+            ...field,
+            size: 'small',
+            variant: field.variant || 'filled',
+            xs: field.xs ?? 12,
+          }),
+        ),
+      ]);
+    };
+
+    loadAddressFormFields();
+  }, [isB2BUser, isMobile, b3Lang]);
 
   const contactInfoRef = useRef<InfoRefProps | null>(null);
   const billingRef = useRef<InfoRefProps | null>(null);
@@ -218,6 +252,7 @@ function QuoteDraft({ setOpenPage }: PageProps) {
               zipCode: shippingDefautAddress?.node?.zipCode || '',
               phoneNumber: shippingDefautAddress?.node?.phoneNumber || '',
               addressId: shippingDefautAddress?.node?.id ? +shippingDefautAddress.node.id : 0,
+              extraFields: shippingDefautAddress?.node?.extraFields || [],
             };
 
             quoteInfo.shippingAddress = addressItem as ShippingAddress;
@@ -239,6 +274,7 @@ function QuoteDraft({ setOpenPage }: PageProps) {
               zipCode: billingDefautAddress?.node?.zipCode || '',
               phoneNumber: billingDefautAddress?.node?.phoneNumber || '',
               addressId: billingDefautAddress?.node?.id ? +billingDefautAddress.node.id : 0,
+              extraFields: billingDefautAddress?.node?.extraFields || [],
             };
 
             quoteInfo.billingAddress = addressItem as BillingAddress;
@@ -301,10 +337,25 @@ function QuoteDraft({ setOpenPage }: PageProps) {
       saveInfo.contactInfo = contactInfo;
     }
 
-    const { shippingAddress, billingAddress } = getAddress();
+    if (billingRef?.current?.validate) {
+      const billingValid = await billingRef.current.validate();
+      if (!billingValid) return;
+    }
+    if (shippingRef?.current?.validate) {
+      const shippingValid = await shippingRef.current.validate();
+      if (!shippingValid) return;
+    }
 
-    saveInfo.shippingAddress = shippingAddress;
-    saveInfo.billingAddress = billingAddress;
+    const { shippingAddress: rawShippingAddress, billingAddress: rawBillingAddress } = getAddress();
+
+    saveInfo.shippingAddress = buildAddressWithExtraFields(
+      rawShippingAddress,
+      accountFormFields,
+    ) as ShippingAddress;
+    saveInfo.billingAddress = buildAddressWithExtraFields(
+      rawBillingAddress,
+      accountFormFields,
+    ) as BillingAddress;
 
     const isComplete = Object.keys(saveInfo.contactInfo).every((key: string) => {
       if (key === 'phoneNumber' || key === 'companyName' || key === 'quoteTitle') {
@@ -322,8 +373,6 @@ function QuoteDraft({ setOpenPage }: PageProps) {
   const handleEditInfoClick = () => {
     setEdit(true);
   };
-
-  const accountFormFields = getAccountFormFields(isMobile, b3Lang);
 
   const updateSummary = () => {
     quoteSummaryRef.current?.refreshSummary();
@@ -423,21 +472,38 @@ function QuoteDraft({ setOpenPage }: PageProps) {
         const newNote = note.trim().replace(/[\r\n]/g, '\\n');
 
         const perfectAddress = (address: ShippingAddress | BillingAddress) => {
-          const newAddress = cloneDeep(address);
+          const withExtras = buildAddressWithExtraFields(cloneDeep(address), accountFormFields) as
+            | ShippingAddress
+            | BillingAddress;
 
           const countryItem = countriesList?.find(
-            (item: Country) => item.countryCode === newAddress.country,
+            (item: Country) => item.countryCode === withExtras.country,
           );
 
           if (countryItem) {
-            newAddress.country = countryItem.countryName;
+            withExtras.country = countryItem.countryName;
           }
 
-          newAddress.address = address?.address || '';
-          newAddress.apartment = address?.apartment || '';
+          withExtras.address = address?.address || '';
+          withExtras.apartment = address?.apartment || '';
 
-          return newAddress;
+          return withExtras;
         };
+
+        if (billingRef?.current?.validate) {
+          const billingValid = await billingRef.current.validate();
+          if (!billingValid) {
+            snackbar.error(b3Lang('quoteDraft.addQuoteInfo'));
+            return;
+          }
+        }
+        if (shippingRef?.current?.validate) {
+          const shippingValid = await shippingRef.current.validate();
+          if (!shippingValid) {
+            snackbar.error(b3Lang('quoteDraft.addQuoteInfo'));
+            return;
+          }
+        }
 
         const { shippingAddress: editShippingAddress, billingAddress: editBillingAddress } =
           billingRef?.current ? getAddress() : info;
@@ -445,6 +511,15 @@ function QuoteDraft({ setOpenPage }: PageProps) {
         const shippingAddress = editShippingAddress ? perfectAddress(editShippingAddress) : {};
 
         const billingAddress = editBillingAddress ? perfectAddress(editBillingAddress) : {};
+
+        if (
+          hasMissingRequiredAddressExtraFields(shippingAddress, accountFormFields) ||
+          hasMissingRequiredAddressExtraFields(billingAddress, accountFormFields)
+        ) {
+          snackbar.error(b3Lang('quoteDraft.addQuoteInfo'));
+          setEdit(true);
+          return;
+        }
 
         let allPrice = 0;
         let allTaxPrice = 0;

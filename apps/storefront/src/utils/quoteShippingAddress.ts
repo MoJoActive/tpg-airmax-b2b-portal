@@ -339,6 +339,9 @@ export const ensureQuoteAddressInCompanyBook = async (
           isDefaultShipping: 1,
           label: existing.node.label || label,
           company: existing.node.company || shippingAddress.companyName || '',
+          extraFields: shippingAddress.extraFields?.length
+            ? shippingAddress.extraFields
+            : existing.node.extraFields || [],
         }),
       );
     } else {
@@ -361,7 +364,7 @@ export const ensureQuoteAddressInCompanyBook = async (
         isDefaultBilling: 0,
         label,
         company: shippingAddress.companyName || '',
-        extraFields: [],
+        extraFields: shippingAddress.extraFields || [],
       });
     }
 
