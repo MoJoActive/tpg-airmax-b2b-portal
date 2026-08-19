@@ -4,7 +4,7 @@ import { Box } from '@mui/material';
 
 import CustomButton from '@/components/button/CustomButton';
 import { useMobile } from '@/hooks';
-import { ShippingAddress } from '@/types/quotes';
+import { BillingAddress, ShippingAddress } from '@/types/quotes';
 
 import { handleQuoteCheckout } from '../utils/quoteCheckout';
 
@@ -16,6 +16,7 @@ interface QuoteDetailFooterProps {
   status: number;
   proceedingCheckoutFn: () => boolean;
   shippingAddress?: ShippingAddress;
+  billingAddress?: BillingAddress;
   contactEmail?: string;
   companyId?: string | number;
 }
@@ -29,6 +30,7 @@ function QuoteDetailFooter(props: QuoteDetailFooterProps) {
     status,
     proceedingCheckoutFn,
     shippingAddress,
+    billingAddress,
     contactEmail,
     companyId,
   } = props;
@@ -74,6 +76,7 @@ function QuoteDetailFooter(props: QuoteDetailFooterProps) {
             quoteUuid,
             navigate,
             shippingAddress,
+            billingAddress,
             contactEmail,
             companyId,
           });

@@ -626,6 +626,7 @@ function QuoteDetail() {
         location,
         navigate,
         shippingAddress: quoteDetail.shippingAddress,
+        billingAddress: quoteDetail.billingAddress,
         contactEmail: quoteDetail.contactInfo?.email,
         companyId: companyInfoId || quoteDetail.companyId?.id,
       });
@@ -871,6 +872,7 @@ function QuoteDetail() {
               status={quoteDetail.status}
               proceedingCheckoutFn={proceedingCheckoutFn}
               shippingAddress={quoteDetail.shippingAddress}
+              billingAddress={quoteDetail.billingAddress}
               contactEmail={quoteDetail.contactInfo?.email}
               companyId={companyInfoId || quoteDetail.companyId?.id}
             />

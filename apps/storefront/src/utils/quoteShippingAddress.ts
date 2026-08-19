@@ -1,4 +1,4 @@
-import { ShippingAddress } from '@/types/quotes';
+import { BillingAddress, ShippingAddress } from '@/types/quotes';
 import b2bLogger from '@/utils/b3Logger';
 import { baseUrl } from '@/utils/basicConfig';
 
@@ -23,6 +23,7 @@ export interface StoredQuoteShippingPayload {
   version: 1;
   cartId: string;
   address: StorefrontShippingAddress;
+  billingAddress?: StorefrontShippingAddress;
   restored?: boolean;
 }
 
@@ -54,11 +55,43 @@ export const mapQuoteShippingToStorefront = (
   };
 };
 
-export const storeQuoteShippingAddress = (address: StorefrontShippingAddress, cartId: string) => {
+export const mapQuoteBillingToStorefront = (
+  billingAddress: BillingAddress,
+  contactEmail?: string,
+): StorefrontShippingAddress | null => {
+  const address1 = (billingAddress.address || '').trim();
+  if (!address1) {
+    return null;
+  }
+
+  const extended = billingAddress as BillingAddress & { countryCode?: string; stateCode?: string };
+
+  return {
+    firstName: billingAddress.firstName || '',
+    lastName: billingAddress.lastName || '',
+    email: contactEmail || '',
+    company: billingAddress.companyName || '',
+    address1,
+    address2: billingAddress.apartment || '',
+    city: billingAddress.city || '',
+    stateOrProvince: billingAddress.state || '',
+    stateOrProvinceCode: extended.stateCode || '',
+    countryCode: extended.countryCode || '',
+    postalCode: billingAddress.zipCode || '',
+    phone: billingAddress.phoneNumber || '',
+  };
+};
+
+export const storeQuoteShippingAddress = (
+  address: StorefrontShippingAddress,
+  cartId: string,
+  billingAddress?: StorefrontShippingAddress | null,
+) => {
   const payload: StoredQuoteShippingPayload = {
     version: 1,
     cartId,
     address,
+    ...(billingAddress ? { billingAddress } : {}),
   };
   const serialized = JSON.stringify(payload);
 
@@ -188,6 +221,51 @@ export const applyQuoteShippingToCheckout = async (
     try {
       // eslint-disable-next-line no-await-in-loop
       await applyQuoteShippingOnce(cartId, address);
+      return true;
+    } catch (error) {
+      b2bLogger.error(error);
+      if (attempt < attempts) {
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(250 * attempt);
+      }
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Seed checkout billing before redirect so B2B default billing does not win on load.
+ */
+export const applyQuoteBillingToCheckout = async (
+  cartId: string,
+  address: StorefrontShippingAddress,
+): Promise<boolean> => {
+  const attempts = 3;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const response = await fetch(
+        checkoutApi(`/api/storefront/checkouts/${cartId}/billing-address`),
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(address),
+        },
+      );
+
+      // eslint-disable-next-line no-await-in-loop
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        throw new Error(`Failed to apply quote billing to checkout: ${responseText}`);
+      }
+
       return true;
     } catch (error) {
       b2bLogger.error(error);
