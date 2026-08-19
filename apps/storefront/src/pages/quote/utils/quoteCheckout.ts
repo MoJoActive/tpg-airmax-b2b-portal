@@ -6,12 +6,14 @@ import {
   getBCStorefrontProductSettings,
 } from '@/shared/service/b2b';
 import { setQuoteDetailToCheckoutUrl, store } from '@/store';
-import { ShippingAddress } from '@/types/quotes';
+import { BillingAddress, ShippingAddress } from '@/types/quotes';
 import { attemptCheckoutLoginAndRedirect, setQuoteToStorage } from '@/utils/b3checkout';
 import b2bLogger from '@/utils/b3Logger';
 import { platform } from '@/utils/basicConfig';
 import { getSearchVal } from '@/utils/loginInfo';
 import {
+  applyQuoteBillingToCheckout,
+  mapQuoteBillingToStorefront,
   mapQuoteShippingToStorefront,
   storeQuoteShippingAddress,
 } from '@/utils/quoteShippingAddress';
@@ -23,6 +25,7 @@ interface QuoteCheckout {
   quoteUuid?: string;
   navigate?: NavigateFunction;
   shippingAddress?: ShippingAddress;
+  billingAddress?: BillingAddress;
   contactEmail?: string;
   companyId?: string | number;
 }
@@ -34,6 +37,7 @@ export const handleQuoteCheckout = async ({
   quoteUuid,
   navigate,
   shippingAddress,
+  billingAddress,
   contactEmail,
 }: QuoteCheckout) => {
   try {
@@ -77,9 +81,16 @@ export const handleQuoteCheckout = async ({
     const storefrontShipping = shippingAddress
       ? mapQuoteShippingToStorefront(shippingAddress, contactEmail)
       : null;
+    const storefrontBilling = billingAddress
+      ? mapQuoteBillingToStorefront(billingAddress, contactEmail)
+      : null;
 
     if (storefrontShipping && cartId) {
-      storeQuoteShippingAddress(storefrontShipping, cartId);
+      storeQuoteShippingAddress(storefrontShipping, cartId, storefrontBilling);
+    }
+
+    if (storefrontBilling && cartId) {
+      await applyQuoteBillingToCheckout(cartId, storefrontBilling);
     }
 
     if (platform === 'bigcommerce') {
