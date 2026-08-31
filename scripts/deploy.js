@@ -106,7 +106,11 @@ const tasks = new Listr([
             /VITE_ASSETS_ABSOLUTE_PATH=.+/,
             `VITE_ASSETS_ABSOLUTE_PATH="${absolutePath}/assets/"`
           )
-          fs.writeFileSync(envPath, newEnv)
+          // Stamp VITE_BUILD_HASH so the bundle can identify itself at runtime
+          const newEnvWithHash = /VITE_BUILD_HASH=/.test(newEnv)
+            ? newEnv.replace(/VITE_BUILD_HASH=.+/, `VITE_BUILD_HASH=${ctx.timestamp}`)
+            : `${newEnv}\nVITE_BUILD_HASH=${ctx.timestamp}`
+          fs.writeFileSync(envPath, newEnvWithHash)
 
           resolve()
         } catch (ex) {
@@ -199,16 +203,17 @@ const finished = () => {
     )}`
   )
 
+  const distPath = path.join(__dirname, '../apps/storefront/dist')
   const indexFileHash = fs
-    .readdirSync('./apps/storefront/dist')
+    .readdirSync(distPath)
     .find((o) => o.includes('index.'))
     .split('.')[1]
   const polyfillsFileHash = fs
-    .readdirSync('./apps/storefront/dist')
+    .readdirSync(distPath)
     .find((o) => o.includes('polyfills-legacy.'))
     .split('.')[1]
   const indexLegacyFileHash = fs
-    .readdirSync('./apps/storefront/dist')
+    .readdirSync(distPath)
     .find((o) => o.includes('index-legacy.'))
     .split('.')[1]
 
@@ -252,11 +257,16 @@ const finished = () => {
   src="${absolutePath}/index-legacy.${indexLegacyFileHash}${isProd ? '.js' : ''}"
 ></script>`
 
+  // Write a ready-to-paste Script Manager block as a build artifact
+  const scriptManagerHtml = `<!-- Paste this block verbatim into BigCommerce Script Manager. Build hash: ${indexFileHash} -->\n${template}`
+  fs.writeFileSync(path.join(distPath, 'script-manager.html'), scriptManagerHtml)
+
   console.log(`2. Replace the existing script tags with the following:`)
   console.log(chalk.greenBright(template))
 
   console.log(`3. Click Save`)
   console.log('\n🎉 Thanks for deploying!')
+  console.log('[deploy] storefront bundle hash:', indexFileHash)
 }
 
 tasks.run().then(finished)
