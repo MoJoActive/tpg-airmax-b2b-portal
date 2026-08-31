@@ -1,4 +1,5 @@
 import { Environment, EnvSpecificConfig } from '@/types';
+import b2bLogger from '@/utils/b3Logger';
 
 const { VITE_B2B_URL, VITE_B2B_CLIENT_ID, VITE_IS_LOCAL_ENVIRONMENT } = import.meta.env;
 
@@ -35,6 +36,12 @@ const getEnvironment = (environment?: Environment): Environment => {
   const b3Environment = (window as any).B3?.setting?.environment;
   if (isEnvironment(b3Environment)) {
     return b3Environment;
+  }
+
+  if (b3Environment !== undefined) {
+    b2bLogger.error(
+      `[B3] Unrecognized B3.setting.environment "${b3Environment}"; falling back to "${DEFAULT_ENVIRONMENT}". Valid: ${Object.values(Environment).join(', ')}.`,
+    );
   }
 
   return DEFAULT_ENVIRONMENT;
