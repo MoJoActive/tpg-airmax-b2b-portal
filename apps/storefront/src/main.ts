@@ -1,5 +1,8 @@
 import { bindLinks, initApp, requestIdleCallbackFunction, unbindLinks } from './load-functions';
 
+// Surface the deployed bundle version in DevTools so stale Script Manager pastes can be caught quickly
+console.info(`[B3] storefront bundle: ${import.meta.env.VITE_BUILD_HASH ?? 'dev'}`);
+
 // check if the accesed url contains a hashtag
 if (window.location.hash.startsWith('#/')) {
   initApp();
