@@ -28,7 +28,7 @@ export const defaultCurrenciesState = {
       token_location: 'left',
       thousands_token: ',',
     },
-  ] satisfies [Currency],
+  ],
   channelCurrencies: {
     channel_id: 1,
     enabled_currencies: ['USD'],
