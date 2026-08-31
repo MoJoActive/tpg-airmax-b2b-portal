@@ -1,15 +1,19 @@
 import { useContext, useEffect } from 'react';
 
+import { CHECKOUT_URL } from '@/constants';
 import { DynamicallyVariableedContext } from '@/shared/dynamicallyVariable';
 import { GlobaledContext } from '@/shared/global';
-
-const { height: defaultHeight, overflow: defaultOverflow } = document.body.style;
 
 const useSetOpen = (isOpen: boolean, _?: string, params?: CustomFieldItems) => {
   const { dispatch } = useContext(GlobaledContext);
 
   const { dispatch: dispatchMsg } = useContext(DynamicallyVariableedContext);
   useEffect(() => {
+    if (window.location.pathname.includes(CHECKOUT_URL)) return;
+
+    const prevHeight = document.body.style.height;
+    const prevOverflow = document.body.style.overflow;
+
     if (isOpen) {
       // The iframe screen is removed
       document.body.style.height = '100%';
@@ -38,9 +42,6 @@ const useSetOpen = (isOpen: boolean, _?: string, params?: CustomFieldItems) => {
         },
       });
     } else {
-      document.body.style.height = defaultHeight;
-      document.body.style.overflow = defaultOverflow;
-
       // close all tips
       dispatchMsg({
         type: 'common',
@@ -51,6 +52,11 @@ const useSetOpen = (isOpen: boolean, _?: string, params?: CustomFieldItems) => {
         },
       });
     }
+
+    return () => {
+      document.body.style.height = prevHeight;
+      document.body.style.overflow = prevOverflow;
+    };
     // ignore dispatch and dispatchMsg as they are not reactive values
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, params?.quoteBtn, params?.shoppingListBtn]);

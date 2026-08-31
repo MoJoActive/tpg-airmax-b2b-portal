@@ -34,10 +34,11 @@ function CheckoutTip(props: CheckoutTipProps) {
           padding: '40px 40px 20px 40px',
         }}
         open={open}
-        onClose={() => setOpen(true)}
+        onClose={() => {}}
+        disableEscapeKeyDown
         fullScreen={isMobile}
       >
-        <DialogContent>please select a company</DialogContent>
+        <DialogContent>Please select a company</DialogContent>
         <DialogActions
           sx={{
             display: 'flex',
@@ -54,7 +55,7 @@ function CheckoutTip(props: CheckoutTipProps) {
             }}
             variant="contained"
           >
-            ok
+            OK
           </CustomButton>
         </DialogActions>
       </Dialog>
