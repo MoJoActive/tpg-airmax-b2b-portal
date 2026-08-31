@@ -10,10 +10,22 @@ import CustomButton from '../button/CustomButton';
 
 interface CheckoutTipProps {
   setOpenPage: SetOpenPage;
+  /**
+   * Number of companies this SUPER_ADMIN can masquerade as.
+   * Dialog renders only when > 1 — a rep with exactly one assigned company
+   * cannot "select" anything, so the dialog would be a dead-end.
+   *
+   * TODO: wire this prop from the parent that renders <CheckoutTip>.
+   * The superAdminCompanies GraphQL query in HeadlessController.tsx
+   * (getMasqueradeState) already fetches the list — pass `companies.length`
+   * down, or add a dedicated store slice entry populated at login time.
+   * Until then, pass 0 / omit the prop to suppress the dialog safely.
+   */
+  companiesCount?: number;
 }
 
 function CheckoutTip(props: CheckoutTipProps) {
-  const { setOpenPage } = props;
+  const { setOpenPage, companiesCount = 0 } = props;
   const [open, setOpen] = useState<boolean>(true);
 
   const [isMobile] = useMobile();
@@ -27,17 +39,20 @@ function CheckoutTip(props: CheckoutTipProps) {
 
   return (
     role === 3 &&
-    !isAgenting && (
+    !isAgenting &&
+    companiesCount > 1 && (
       <Dialog
         sx={{
           zIndex: 99999999993,
           padding: '40px 40px 20px 40px',
         }}
         open={open}
-        onClose={() => setOpen(true)}
+        // Prevent backdrop-click and Escape from dismissing — user must select a company.
+        disableEscapeKeyDown
+        onClose={() => {}}
         fullScreen={isMobile}
       >
-        <DialogContent>please select a company</DialogContent>
+        <DialogContent>Please select a company</DialogContent>
         <DialogActions
           sx={{
             display: 'flex',
@@ -54,7 +69,7 @@ function CheckoutTip(props: CheckoutTipProps) {
             }}
             variant="contained"
           >
-            ok
+            OK
           </CustomButton>
         </DialogActions>
       </Dialog>
