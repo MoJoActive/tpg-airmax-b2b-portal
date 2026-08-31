@@ -296,11 +296,6 @@ export const getCurrentCustomerInfo = async (b2bToken?: string) => {
       customerGroupId,
     } = loginCustomer;
 
-    if (customerGroupId !== 10) {
-      clearCurrentCustomerInfo();
-      return undefined;
-    }
-
     const companyUserInfo = await getCompanyUserInfo().catch(mapToCompanyError);
 
     if (companyUserInfo && customerId) {
