@@ -21,6 +21,10 @@ import {
 } from '@/shared/service/b2b';
 import { deleteCart } from '@/shared/service/bc/graphql/cart';
 import {
+  getShippingAddressType,
+  setQuoteAddressTypeViaRyzome,
+} from '@/shared/service/ryzome/quoteAddressType';
+import {
   activeCurrencyInfoSelector,
   isB2BUserSelector,
   resetDraftQuoteInfo,
@@ -636,6 +640,8 @@ function QuoteDraft({ setOpenPage }: PageProps) {
 
           await deleteCart(deleteCartObject);
         }
+
+        await setQuoteAddressTypeViaRyzome(id, getShippingAddressType(shippingAddress), createdAt);
 
         if (quoteSubmissionResponseInfo.value === '0') {
           handleAfterSubmit(id, createdAt, uuid);
