@@ -296,12 +296,20 @@ export const getCurrentCustomerInfo = async (b2bToken?: string) => {
       customerGroupId,
     } = loginCustomer;
 
-    if (customerGroupId !== 10) {
+    // Non-Pro customers are kicked out below unless they are Super Admins, so a lookup
+    // error for them should not surface as a company-status error.
+    const companyUserInfo = await getCompanyUserInfo().catch((error) => {
+      if (customerGroupId !== 10) return undefined;
+      return mapToCompanyError(error);
+    });
+
+    // Only Pro (group 10) customers may use the portal. Super Admins are exempt:
+    // they have no customer group until they masquerade as a company.
+    const isSuperAdmin = Number(companyUserInfo?.role) === CustomerRole.SUPER_ADMIN;
+    if (customerGroupId !== 10 && !isSuperAdmin) {
       clearCurrentCustomerInfo();
       return undefined;
     }
-
-    const companyUserInfo = await getCompanyUserInfo().catch(mapToCompanyError);
 
     if (companyUserInfo && customerId) {
       const { userType, id, companyRoleName, permissions } = companyUserInfo;

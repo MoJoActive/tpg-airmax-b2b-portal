@@ -202,8 +202,9 @@ export default function App() {
             return;
           }
 
-          const { customerGroupId } = store.getState().company.customer;
-          if (customerGroupId !== 10) {
+          // Pro (group 10) only; Super Admins have no group until they masquerade.
+          const { customerGroupId, role: currentRole } = store.getState().company.customer;
+          if (customerGroupId !== 10 && Number(currentRole) !== CustomerRole.SUPER_ADMIN) {
             logoutSession();
             showPageMask(false);
             return;

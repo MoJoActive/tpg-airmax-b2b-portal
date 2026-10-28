@@ -41,7 +41,7 @@ const WebDAVHelper = {
       const wfs = await WebDAVHelper.Connect()
       const uploader = (file) => {
         return new Promise(async (resolve, reject) => {
-          const contents = fs.readFileSync(`${src}\\${file}`)
+          const contents = fs.readFileSync(path.join(src, file))
           wfs.writeFile(`${dest}/${file}`, contents, (err) => {
             if (err) reject(err)
             resolve()
@@ -190,13 +190,16 @@ const finished = () => {
   console.log(chalk.magentaBright('Manual Step Required'))
   console.log(chalk.magentaBright('---------------------------------------'))
   console.log(
-    'A final step is required to change the storefront checkout to the newly deployed checkout.'
+    'A final step is required to point the Airmax theme at the newly deployed Buyer Portal.'
+  )
+  console.log(
+    chalk.yellow(
+      'The portal is loaded from the theme (inside customer-group conditions), NOT Script Manager. Do not add these tags to Script Manager.'
+    )
   )
   console.log()
   console.log(
-    `1. Go to ${chalk.blue(
-      `https://store-${config.WEBDAV_STOREHASH}.mybigcommerce.com/manage/channel/1/script-manager`
-    )}`
+    `1. Open ${chalk.blue('TPG-Airmax-Theme/templates/components/common/navigation.html')}`
   )
 
   const indexFileHash = fs
@@ -252,10 +255,12 @@ const finished = () => {
   src="${absolutePath}/index-legacy.${indexLegacyFileHash}${isProd ? '.js' : ''}"
 ></script>`
 
-  console.log(`2. Replace the existing script tags with the following:`)
+  console.log(
+    `2. Replace the three b2b-portal <script src> URLs with the ones below (leave the window.B3 config and the {{#all ...}} conditions as they are):`
+  )
   console.log(chalk.greenBright(template))
 
-  console.log(`3. Click Save`)
+  console.log(`3. Upload the theme, test on a preview theme, then apply it`)
   console.log('\n🎉 Thanks for deploying!')
 }
 
