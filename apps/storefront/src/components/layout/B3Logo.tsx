@@ -28,6 +28,7 @@ export default function B3Logo() {
               },
               '& img': {
                 maxHeight: '40px',
+                maxWidth: '100%',
               },
             }
           : {
@@ -37,6 +38,9 @@ export default function B3Logo() {
               alignItems: 'center',
               '& img': {
                 maxHeight: '65px',
+                // wide logos (Airmax is ~5.6:1) otherwise overflow the 200px column
+                // and cover the masquerade company name in the header
+                maxWidth: '100%',
               },
             }
       }
