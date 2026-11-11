@@ -64,6 +64,7 @@ import getAccountFormFields, {
   QuoteAddressFormField,
 } from '../quote/config';
 import Container from '../quote/style';
+import { getPickListQuoteLines } from '../quote/utils/pickListQuoteLines';
 
 type BCAddress = {
   node: BCAddressItemType;
@@ -534,8 +535,21 @@ function QuoteDraft({ setOpenPage }: PageProps) {
           return value;
         };
 
-        const productList = draftQuoteList.map((item) => {
+        const pickListLines = await getPickListQuoteLines(draftQuoteList, {
+          companyId: companyB2BId || salesRepCompanyId,
+          customerGroupId: customer.customerGroupId,
+          decimalPlaces: currency.decimal_places,
+        });
+
+        const productGroups = draftQuoteList.map((item, index) => {
           const { node } = item;
+
+          allPrice += +(node?.basePrice || 0) * +(node?.quantity || 0);
+          allTaxPrice += +(node?.taxPrice || 0) * +(node?.quantity || 0);
+
+          const componentLines = pickListLines[index];
+          if (componentLines?.length) return componentLines;
+
           const product = {
             ...node.productsSearch,
             selectOptions: node?.optionList || '',
@@ -560,10 +574,6 @@ function QuoteDraft({ setOpenPage }: PageProps) {
             varantsItem = variants.find((item) => item.sku === node.variantSku);
           }
 
-          allPrice += +(node?.basePrice || 0) * +(node?.quantity || 0);
-
-          allTaxPrice += +(node?.taxPrice || 0) * +(node?.quantity || 0);
-
           const items = {
             productId: node?.productsSearch?.id,
             sku: node.variantSku,
@@ -578,7 +588,7 @@ function QuoteDraft({ setOpenPage }: PageProps) {
             itemId: generateUuid(),
           };
 
-          return items;
+          return [items];
         });
 
         const fileList = getFileList(quoteinfo?.fileInfo || []);
@@ -600,7 +610,7 @@ function QuoteDraft({ setOpenPage }: PageProps) {
           shippingAddress,
           billingAddress,
           contactInfo,
-          productList,
+          productList: productGroups.flat(),
           fileList,
           taxTotal: allTaxPrice.toFixed(currency.decimal_places),
           currency: {
