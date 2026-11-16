@@ -16,6 +16,8 @@ import { createNewCart, deleteCart, getCart } from '@/shared/service/bc/graphql/
 import { useAppSelector } from '@/store';
 import { currencyFormatConvert } from '@/utils';
 
+import { estimateQuoteTax } from '../utils/quoteDetailTax';
+
 interface Summary {
   originalSubtotal: string | number;
   discount: string | number;
@@ -106,7 +108,11 @@ export default function QuoteDetailSummary({
   >(null);
 
   const [selectedShippingOption, setSelectedShippingOption] = useState<string | null>(null);
-  const [liveTax, setLiveTax] = useState<number | null>(null);
+  const [checkoutTax, setCheckoutTax] = useState<{
+    total: number;
+    pricesIncludeTax: boolean;
+    lines: Parameters<typeof estimateQuoteTax>[1];
+  } | null>(null);
 
   useEffect(() => {
     const getLiveSummary = async () => {
@@ -170,7 +176,17 @@ export default function QuoteDetailSummary({
 
         const consignmentData = await consignmentResponse.json();
 
-        setLiveTax(consignmentData.taxTotal ?? 0);
+        const { cart, taxTotal } = consignmentData;
+        if (consignmentResponse.ok && typeof taxTotal === 'number') {
+          setCheckoutTax({
+            total: taxTotal,
+            pricesIncludeTax: cart?.isTaxIncluded === true,
+            lines: [
+              ...(cart?.lineItems?.physicalItems ?? []),
+              ...(cart?.lineItems?.digitalItems ?? []),
+            ],
+          });
+        }
 
         const shippingOptions =
           consignmentData.consignments[0]?.availableShippingOptions?.map(
@@ -228,6 +244,20 @@ export default function QuoteDetailSummary({
 
   const subtotalPrice = +originalSubtotal;
   const quotedSubtotal = +originalSubtotal - +discount;
+  const addressTax =
+    checkoutTax &&
+    (showRetailQuote
+      ? checkoutTax.total
+      : estimateQuoteTax(
+          quoteDetail.productsList,
+          checkoutTax.lines,
+          checkoutTax.total,
+          checkoutTax.pricesIncludeTax,
+          enteredInclusiveTax,
+          quoteDetail.currency?.decimalPlaces ?? 2,
+        ));
+  const summaryTax = addressTax ?? (shippingOptions ? quoteDetailTax : null);
+  const subtotalWithTax = enteredInclusiveTax ? quotedSubtotal : quotedSubtotal + (summaryTax ?? 0);
 
   return (
     <Card>
@@ -304,9 +334,7 @@ export default function QuoteDetailSummary({
               }}
             >
               <Typography>{b3Lang('quoteDetail.summary.tax')}</Typography>
-              <Typography>
-                {showPrice(priceFormat(liveTax !== null ? liveTax : 'Calculating...'))}
-              </Typography>
+              <Typography>{showPrice(priceFormat(summaryTax ?? 'Calculating...'))}</Typography>
             </Grid>
             <Grid
               container
@@ -386,10 +414,9 @@ export default function QuoteDetailSummary({
               >
                 {showPrice(
                   priceFormat(
-                    shippingOptions === null || liveTax === null
+                    shippingOptions === null || summaryTax === null
                       ? 'Calculating...'
-                      : quotedSubtotal +
-                          liveTax +
+                      : subtotalWithTax +
                           (shippingOptions?.find((opt) => opt.id === selectedShippingOption)
                             ?.cost ?? 0),
                   ),

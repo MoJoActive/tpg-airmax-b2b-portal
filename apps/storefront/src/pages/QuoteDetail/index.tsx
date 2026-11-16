@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useB3Lang } from '@b3/lang';
 import { Box, Button, Grid } from '@mui/material';
 import copy from 'copy-to-clipboard';
-import { get } from 'lodash-es';
 
 import B3Spin from '@/components/spin/B3Spin';
 import { useMobile } from '@/hooks';
@@ -28,6 +27,7 @@ import {
   useAppSelector,
 } from '@/store';
 import { Currency } from '@/types';
+import { Variant } from '@/types/products';
 import { snackbar } from '@/utils';
 import { getBCPrice, getVariantInfoOOSAndPurchase } from '@/utils/b3Product/b3Product';
 import { conversionProductsList } from '@/utils/b3Product/shared/config';
@@ -44,6 +44,7 @@ import QuoteNote from '../quote/components/QuoteNote';
 import QuoteTermsAndConditions from '../quote/components/QuoteTermsAndConditions';
 import { ProductInfoProps } from '../quote/shared/config';
 import { handleQuoteCheckout } from '../quote/utils/quoteCheckout';
+import { getQuoteLineTax, getQuoteTaxRate } from '../quote/utils/quoteDetailTax';
 
 function QuoteDetail() {
   const { id = '' } = useParams();
@@ -197,16 +198,13 @@ function QuoteDetail() {
     }
   }
 
-  const getTaxRate = (taxClassId: number, variants: any) => {
-    if (variants.length) {
-      const taxExclusive = get(variants, '[0].bc_calculated_price.tax_exclusive', 0);
-      const taxInclusive = get(variants, '[0].bc_calculated_price.tax_inclusive', 0);
-      return taxExclusive > 0 ? (taxInclusive - taxExclusive) / taxExclusive : 0;
-    }
-    if (classRates.length) {
-      return (classRates.find((rate) => rate.taxClassId === taxClassId)?.rate || 0) / 100;
-    }
-    return 0;
+  const getTaxRate = (taxClassId: number, variants: Variant[]) => {
+    const configuredRate = classRates.find((rate) => rate.taxClassId === taxClassId)?.rate;
+    return getQuoteTaxRate(
+      variants[0]?.bc_calculated_price,
+      configuredRate,
+      currency.decimal_places,
+    );
   };
 
   const handleGetProductsById = async (listProducts: ProductInfoProps[]) => {
@@ -331,12 +329,8 @@ function QuoteDetail() {
           } = product;
 
           const taxRate = getTaxRate(taxClassId, variants);
-          const unitBaseTax = enteredInclusiveTax
-            ? (+basePrice * taxRate) / (1 + taxRate)
-            : +basePrice * taxRate;
-          const unitOfferedTax = enteredInclusiveTax
-            ? (+offeredPrice * taxRate) / (1 + taxRate)
-            : +offeredPrice * taxRate;
+          const unitBaseTax = getQuoteLineTax(+basePrice, 1, taxRate, enteredInclusiveTax);
+          const unitOfferedTax = getQuoteLineTax(+offeredPrice, 1, taxRate, enteredInclusiveTax);
 
           const baseUnitPrice = getBCPrice(+basePrice, unitBaseTax);
           const offeredUnitPrice = getBCPrice(+offeredPrice, unitOfferedTax);
@@ -404,12 +398,7 @@ function QuoteDetail() {
         totalAmount: retailTotal.toString(),
       });
 
-      // keep quote detail tax in sync:
-      // - for imported quotes (taxTotal === 0) use the derived tax from line items
-      // - otherwise, fall back to the original behavior
-      if (+quote.taxTotal === 0) {
-        setQuoteDetailTax(taxPrice);
-      } else if (+quote.shippingTotal === 0) {
+      if (!productsWithMoreInfo?.length) {
         setQuoteDetailTax(+quote.taxTotal);
       } else {
         let lineItemTax = 0;
@@ -417,13 +406,15 @@ function QuoteDetail() {
           const {
             quantity,
             offeredPrice,
+            variantId,
             productsSearch: { variants = [], taxClassId },
           } = product;
 
-          const taxRate = getTaxRate(taxClassId, variants);
-          lineItemTax += enteredInclusiveTax
-            ? ((+offeredPrice * taxRate) / (1 + taxRate)) * +quantity
-            : +offeredPrice * taxRate * +quantity;
+          const variant = variants.find(
+            (item: { variant_id: number }) => +item.variant_id === +variantId,
+          );
+          const taxRate = getTaxRate(taxClassId, variant ? [variant] : variants);
+          lineItemTax += getQuoteLineTax(+offeredPrice, +quantity, taxRate, enteredInclusiveTax);
         });
 
         setQuoteDetailTax(lineItemTax);

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { B2BEvent, useB2BCallback } from '@b3/hooks';
 import { useB3Lang } from '@b3/lang';
@@ -178,6 +178,56 @@ function QuoteDraft({ setOpenPage }: PageProps) {
   );
 
   const quoteSummaryRef = useRef<QuoteSummaryRef | null>(null);
+  const loadPickListGroups = useCallback(
+    () =>
+      getPickListQuoteLines(draftQuoteList, {
+        companyId: companyB2BId || salesRepCompanyId,
+        customerGroupId: customer.customerGroupId,
+        decimalPlaces: currency.decimal_places,
+        enteredInclusiveTax,
+      }),
+    [
+      draftQuoteList,
+      companyB2BId,
+      salesRepCompanyId,
+      customer.customerGroupId,
+      currency.decimal_places,
+      enteredInclusiveTax,
+    ],
+  );
+  const [pickListTax, setPickListTax] = useState<{
+    load: typeof loadPickListGroups;
+    totals: (number | undefined)[];
+  }>();
+  const pickListRequest = useRef<{
+    load: typeof loadPickListGroups;
+    groups: ReturnType<typeof loadPickListGroups>;
+  }>();
+
+  useEffect(() => {
+    let current = true;
+    const groupsRequest = loadPickListGroups();
+    pickListRequest.current = { load: loadPickListGroups, groups: groupsRequest };
+    groupsRequest
+      .then((groups) => {
+        if (current) {
+          setPickListTax({
+            load: loadPickListGroups,
+            totals: groups.map((group) => group?.taxTotal),
+          });
+        }
+      })
+      .catch((error) => {
+        if (current) {
+          pickListRequest.current = undefined;
+          setPickListTax(undefined);
+          b2bLogger.error(error);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [loadPickListGroups]);
 
   useSetCountry();
 
@@ -535,20 +585,20 @@ function QuoteDraft({ setOpenPage }: PageProps) {
           return value;
         };
 
-        const pickListLines = await getPickListQuoteLines(draftQuoteList, {
-          companyId: companyB2BId || salesRepCompanyId,
-          customerGroupId: customer.customerGroupId,
-          decimalPlaces: currency.decimal_places,
-        });
+        const pickListGroups = await (pickListRequest.current?.load === loadPickListGroups
+          ? pickListRequest.current.groups
+          : loadPickListGroups());
 
         const productGroups = draftQuoteList.map((item, index) => {
           const { node } = item;
 
           allPrice += +(node?.basePrice || 0) * +(node?.quantity || 0);
+          const componentGroup = pickListGroups[index];
+          if (componentGroup) {
+            allTaxPrice += componentGroup.taxTotal;
+            return componentGroup.lines;
+          }
           allTaxPrice += +(node?.taxPrice || 0) * +(node?.quantity || 0);
-
-          const componentLines = pickListLines[index];
-          if (componentLines?.length) return componentLines;
 
           const product = {
             ...node.productsSearch,
@@ -946,7 +996,12 @@ function QuoteDraft({ setOpenPage }: PageProps) {
                 width: '100%',
               }}
             >
-              <QuoteSummary ref={quoteSummaryRef} />
+              <QuoteSummary
+                ref={quoteSummaryRef}
+                pickListTax={
+                  pickListTax?.load === loadPickListGroups ? pickListTax.totals : undefined
+                }
+              />
               <AddToQuote
                 updateList={updateSummary}
                 addToQuote={addToQuote}

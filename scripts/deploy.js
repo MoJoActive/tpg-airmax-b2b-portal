@@ -36,29 +36,36 @@ const WebDAVHelper = {
       })
     })
   },
-  UploadFiles: (src, dest, files) => {
-    return new Promise(async function (resolve, reject) {
-      const wfs = await WebDAVHelper.Connect()
-      const uploader = (file) => {
-        return new Promise(async (resolve, reject) => {
-          const contents = fs.readFileSync(path.join(src, file))
-          wfs.writeFile(`${dest}/${file}`, contents, (err) => {
-            if (err) reject(err)
-            resolve()
+  UploadFiles: async (src, dest, files, onUpload) => {
+    const filesToUpload = files.filter((file) => file.includes('.'))
+    const maxAttempts = 4
+    let wfs = WebDAVHelper.Connect()
+
+    for (const [index, file] of filesToUpload.entries()) {
+      const contents = await fs.promises.readFile(path.join(src, file))
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        onUpload(`${index + 1}/${filesToUpload.length} ${file} (attempt ${attempt}/${maxAttempts})`)
+        try {
+          await new Promise((resolve, reject) => {
+            wfs.writeFile(`${dest}/${file}`, contents, (err) => {
+              if (err) reject(err)
+              else resolve()
+            })
           })
-        })
+          break
+        } catch (err) {
+          const status = Number(err.statusCode || err.response?.statusCode || 0)
+          const retryable = [408, 429, 500, 502, 503, 504].includes(status) ||
+            (!status && /^(ERR_SSL_|ECONNRESET$|ECONNABORTED$|ETIMEDOUT$|EPIPE$|EAI_AGAIN$)/.test(err.code))
+          if (!retryable || attempt === maxAttempts) {
+            const safeCode = /^[A-Z][A-Z0-9_]*$/.test(err.code) ? err.code : 'request failed'
+            throw new Error(`Could not upload ${dest}/${file} (${status || safeCode}).`)
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)))
+          wfs = WebDAVHelper.Connect()
+        }
       }
-
-      const filesToUpload = files.filter((o) => o.includes('.'))
-      const batchSize = 4
-
-      for (let i = 0; i < filesToUpload.length; i += batchSize) {
-        const batch = filesToUpload.slice(i, i + batchSize)
-        await Promise.all(batch.map((file) => uploader(file)))
-      }
-
-      resolve()
-    })
+    }
   },
 }
 
@@ -132,47 +139,42 @@ const tasks = new Listr([
     task: async (ctx, task) => {
       if (config.TEST_MODE) return;
 
-      return new Promise(async (resolve, reject) => {
-        // wait for 1 second
-        await new Promise((resolve, reject) => setTimeout(resolve, 3000))
+      try {
+        // ----------------------------------
+        // Get a list of files/folders to upload
+        // ----------------------------------
+        task.output = 'Getting a list of files and folder to upload...'
+        ctx.distFolder = path.join(__dirname, '../apps/storefront/dist')
+        ctx.distStaticFolder = path.join(
+          __dirname,
+          '../apps/storefront/dist/assets'
+        )
+        ctx.distFiles = await NodeHelper.ListFiles(ctx.distFolder)
+        ctx.distStaticFiles = await NodeHelper.ListFiles(ctx.distStaticFolder)
+        ctx.fileCount = []
+          .concat(ctx.distFiles, ctx.distStaticFiles)
+          .filter((o) => o.includes('.')).length
 
-        try {
-          // ----------------------------------
-          // Get a list of files/folders to upload
-          // ----------------------------------
-          task.output = 'Getting a list of files and folder to upload...'
-          ctx.distFolder = path.join(__dirname, '../apps/storefront/dist')
-          ctx.distStaticFolder = path.join(
-            __dirname,
-            '../apps/storefront/dist/assets'
-          )
-          ctx.distFiles = await NodeHelper.ListFiles(ctx.distFolder)
-          ctx.distStaticFiles = await NodeHelper.ListFiles(ctx.distStaticFolder)
-          ctx.fileCount = []
-            .concat(ctx.distFiles, ctx.distStaticFiles)
-            .filter((o) => o.includes('.')).length
-
-          // ----------------------------------
-          // Upload all the files to WebDAV
-          // ----------------------------------
-          task.output = `Uploading ${ctx.fileCount} files...`
-          await WebDAVHelper.UploadFiles(
-            ctx.distFolder,
-            ctx.destFolder,
-            ctx.distFiles
-          )
-          await WebDAVHelper.UploadFiles(
-            ctx.distStaticFolder,
-            `${ctx.destFolder}/assets`,
-            ctx.distStaticFiles
-          )
-          resolve()
-        } catch (ex) {
-          task.title = `Deployment failed`
-          reject(ex)
-          throw new Error(ex.message)
-        }
-      })
+        // ----------------------------------
+        // Upload all the files to WebDAV
+        // ----------------------------------
+        task.output = `Uploading ${ctx.fileCount} files...`
+        await WebDAVHelper.UploadFiles(
+          ctx.distFolder,
+          ctx.destFolder,
+          ctx.distFiles,
+          (progress) => { task.output = `Uploading portal files: ${progress}` }
+        )
+        await WebDAVHelper.UploadFiles(
+          ctx.distStaticFolder,
+          `${ctx.destFolder}/assets`,
+          ctx.distStaticFiles,
+          (progress) => { task.output = `Uploading assets: ${progress}` }
+        )
+      } catch (ex) {
+        task.title = `Deployment failed`
+        throw ex
+      }
     },
   },
 ])
@@ -264,4 +266,7 @@ const finished = () => {
   console.log('\n🎉 Thanks for deploying!')
 }
 
-tasks.run().then(finished)
+tasks.run().then(finished).catch((err) => {
+  console.error(chalk.red(err.message))
+  process.exitCode = 1
+})

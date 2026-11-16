@@ -5,7 +5,7 @@ import { getPickListQuoteLines } from './pickListQuoteLines';
 
 vi.mock('@/shared/service/b2b', () => ({ searchB2BProducts: vi.fn() }));
 
-const pricing = { companyId: 1, customerGroupId: 2, decimalPlaces: 2 };
+const pricing = { companyId: 1, customerGroupId: 2, decimalPlaces: 2, enteredInclusiveTax: false };
 const parts = [
   { id: 1, sku: '490503', price: 12.99 },
   { id: 2, sku: '490221', price: 0.71 },
@@ -42,17 +42,25 @@ it('replaces only selected parts with catalog SKUs and preserves the quoted pric
       id,
       sku,
       name: sku,
-      variants: [{ sku, variant_id: id + 200, bc_calculated_price: { as_entered: price } }],
+      variants: [
+        {
+          sku,
+          variant_id: id + 200,
+          bc_calculated_price: { as_entered: price, tax_exclusive: price, tax_inclusive: price },
+        },
+      ],
     })),
   });
 
-  const [lines] = await getPickListQuoteLines([pickList], pricing);
+  const [group] = await getPickListQuoteLines([pickList], pricing);
   expect(searchB2BProducts).toHaveBeenCalledWith({
     productIds: [1, 2, 3, 4],
     companyId: 1,
     customerGroupId: 2,
   });
-  expect(lines.map(({ sku, quantity, offeredPrice }) => [sku, quantity, offeredPrice])).toEqual([
+  expect(
+    group?.lines.map(({ sku, quantity, offeredPrice }) => [sku, quantity, offeredPrice]),
+  ).toEqual([
     ['490503', 1, '12.99'],
     ['490221', 1, '0.71'],
     ['490312', 1, '2.59'],
@@ -63,8 +71,57 @@ it('replaces only selected parts with catalog SKUs and preserves the quoted pric
     [{ node: { ...pickList.node, basePrice: 15.01, quantity: 3 } }],
     pricing,
   );
-  expect(repriced.every(({ quantity }) => quantity === 3)).toBe(true);
+  expect(repriced?.lines.every(({ quantity }) => quantity === 3)).toBe(true);
   expect(
-    repriced.reduce((sum, { offeredPrice, quantity }) => sum + Number(offeredPrice) * quantity, 0),
+    repriced?.lines.reduce(
+      (sum, { offeredPrice, quantity }) => sum + Number(offeredPrice) * quantity,
+      0,
+    ),
   ).toBeCloseTo(45.03);
+});
+
+it('rounds tax on each Ice Eater SKU before adding the quote tax', async () => {
+  const iceEaterParts = [
+    { id: 1, sku: '130989', price: 8.44, inclusive: 8.86 },
+    { id: 2, sku: '130988', price: 19.49, inclusive: 20.46 },
+  ];
+  vi.mocked(searchB2BProducts).mockResolvedValue({
+    productsSearch: iceEaterParts.map(({ id, sku, price, inclusive }) => ({
+      id,
+      sku,
+      name: sku,
+      variants: [
+        {
+          sku,
+          variant_id: id + 200,
+          bc_calculated_price: {
+            as_entered: price,
+            tax_exclusive: price,
+            tax_inclusive: inclusive,
+          },
+        },
+      ],
+    })),
+  });
+  const [group] = await getPickListQuoteLines(
+    [
+      {
+        node: {
+          ...pickList.node,
+          basePrice: 27.93,
+          taxPrice: 1.4,
+          optionList: JSON.stringify([
+            { optionId: 'attribute[1]', optionValue: '101' },
+            { optionId: 'attribute[2]', optionValue: '102' },
+          ]),
+        },
+      },
+    ],
+    pricing,
+  );
+  expect(group?.lines.map(({ sku, offeredPrice }) => [sku, offeredPrice])).toEqual([
+    ['130989', '8.44'],
+    ['130988', '19.49'],
+  ]);
+  expect(group?.taxTotal).toBe(1.39);
 });
